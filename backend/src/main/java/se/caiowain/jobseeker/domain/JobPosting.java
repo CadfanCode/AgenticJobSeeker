@@ -20,6 +20,10 @@ public class JobPosting {
     @Column(name = "canonical_url", nullable = false, length = 1024)
     private String canonicalUrl;
 
+    /** Employer-side job identity ({@code host|id}); the strongest cross-source link. */
+    @Column(name = "employer_job_key", length = 320)
+    private String employerJobKey;
+
     @Column(nullable = false, length = 512)
     private String title;
 
@@ -70,6 +74,8 @@ public class JobPosting {
     public void setFingerprint(String fingerprint) { this.fingerprint = fingerprint; }
     public String getCanonicalUrl() { return canonicalUrl; }
     public void setCanonicalUrl(String canonicalUrl) { this.canonicalUrl = canonicalUrl; }
+    public String getEmployerJobKey() { return employerJobKey; }
+    public void setEmployerJobKey(String employerJobKey) { this.employerJobKey = employerJobKey; }
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
     public String getEmployerName() { return employerName; }

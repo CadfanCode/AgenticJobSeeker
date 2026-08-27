@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -22,6 +24,12 @@ public final class JobIdentity {
             "promotion", "utm_source", "utm_medium", "utm_campaign", "utm_term",
             "utm_content", "fbclid", "gclid", "msclkid", "ref", "source",
             "sessionid", "jsessionid");
+
+    /** Job-id shapes used by the ATS platforms that dominate the Swedish market. */
+    private static final List<Pattern> JOB_ID_PATTERNS = List.of(
+            Pattern.compile("jobID:(\\d+)"),          // Varbi
+            Pattern.compile("/jobs/(\\d+)-"),          // Teamtailor
+            Pattern.compile("[?&]gh_jid=(\\d+)"));     // Greenhouse
 
     private JobIdentity() {
     }
@@ -95,6 +103,46 @@ public final class JobIdentity {
                 + "|" + normalizedDescription;
         return sha256Hex(payload);
     }
+
+
+    /**
+     * Layer 2: the employer-side job identity, and the strongest cross-source link.
+     *
+     * <p>JobTech's apply URL and the employer's own ATS listing both embed the same job
+     * id — Teamtailor as {@code /jobs/<id>-<slug>}, Varbi as {@code jobID:<id>} — even
+     * though the surrounding URLs differ in host, language segment and query. Reducing
+     * to {@code host|id} is what lets the same posting merge across sources.
+     *
+     * @return {@code host|id}, or null when no candidate URL carries a recognizable id
+     */
+    public static String employerJobKey(String... candidateUrls) {
+        for (String url : candidateUrls) {
+            if (url == null || url.isBlank()) {
+                continue;
+            }
+            String host;
+            try {
+                URI uri = URI.create(url.trim());
+                if (uri.getHost() == null) {
+                    continue;
+                }
+                host = uri.getHost().toLowerCase();
+                if (host.startsWith("www.")) {
+                    host = host.substring(4);
+                }
+            } catch (IllegalArgumentException e) {
+                continue;
+            }
+            for (Pattern pattern : JOB_ID_PATTERNS) {
+                Matcher matcher = pattern.matcher(url);
+                if (matcher.find()) {
+                    return host + "|" + matcher.group(1);
+                }
+            }
+        }
+        return null;
+    }
+
 
     private static String sha256Hex(String value) {
         try {

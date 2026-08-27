@@ -62,4 +62,42 @@ class JobIdentityTest {
     void fingerprintToleratesNullOrgNumber() {
         assertThat(JobIdentity.fingerprint(null, "Java Developer", "Build services")).hasSize(64);
     }
+
+    @Test
+    void employerJobKeyLinksJobTechApplyUrlToTeamtailorListing() {
+        // JobTech gives the apply URL; Teamtailor's feed gives the listing URL.
+        String fromJobTech = JobIdentity.employerJobKey(
+                "https://jobs.avaron.se/jobs/8278099-senior-fullstackutvecklare-java-angular/applications/new?promotion=2165239-arbetsformedlingen");
+        String fromTeamtailor = JobIdentity.employerJobKey(
+                "https://jobs.avaron.se/jobs/8278099-senior-fullstackutvecklare-java-angular");
+
+        assertThat(fromJobTech).isEqualTo("jobs.avaron.se|8278099");
+        assertThat(fromJobTech).isEqualTo(fromTeamtailor);
+    }
+
+    @Test
+    void employerJobKeyLinksVarbiAcrossLanguageSegmentAndQuery() {
+        // JobTech's apply URL and Varbi's RSS link differ in language segment and query.
+        String fromJobTech = JobIdentity.employerJobKey(
+                "https://transportstyrelsen.varbi.com/se/what:job/jobID:962603/type:job/where:125/apply:1");
+        String fromVarbi = JobIdentity.employerJobKey(
+                "https://transportstyrelsen.varbi.com/en/what:job/jobID:962603/");
+
+        assertThat(fromJobTech).isEqualTo("transportstyrelsen.varbi.com|962603");
+        assertThat(fromJobTech).isEqualTo(fromVarbi);
+    }
+
+    @Test
+    void employerJobKeyDistinguishesDifferentJobsAtTheSameEmployer() {
+        assertThat(JobIdentity.employerJobKey("https://jobs.avaron.se/jobs/8278099-a"))
+                .isNotEqualTo(JobIdentity.employerJobKey("https://jobs.avaron.se/jobs/8279000-b"));
+    }
+
+    @Test
+    void employerJobKeyFallsBackThroughCandidatesAndReturnsNullWhenNoIdPresent() {
+        assertThat(JobIdentity.employerJobKey(null, "https://jobs.avaron.se/jobs/8278099-a"))
+                .isEqualTo("jobs.avaron.se|8278099");
+        assertThat(JobIdentity.employerJobKey("https://careers.example.se/apply", "not a url"))
+                .isNull();
+    }
 }
