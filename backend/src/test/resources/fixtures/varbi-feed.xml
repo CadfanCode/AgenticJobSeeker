@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Lediga jobb hos Transportstyrelsen</title>
+    <link>https://transportstyrelsen.varbi.com/</link>
+    <description>Lediga tjanster</description>
+    <item>
+      <title>Portfolj- och modellansvarig ITSM, Norrkoping</title>
+      <link>https://transportstyrelsen.varbi.com/en/what:job/jobID:962603/</link>
+      <description>Vi far samhallet att fungera for manniskor pa vag, pa spar, i luften och pa sjon. Vi soker nu en systemutvecklare med erfarenhet av Java.</description>
+      <pubDate>Thu, 27 Aug 2026 00:00:00 +0200</pubDate>
+      <guid>https://transportstyrelsen.varbi.com/en/what:job/jobID:962603/</guid>
+    </item>
+    <item>
+      <title>Receptionist till huvudkontoret</title>
+      <link>https://transportstyrelsen.varbi.com/en/what:job/jobID:962604/</link>
+      <description>Vi soker en receptionist till vart huvudkontor i Norrkoping.</description>
+      <pubDate>Wed, 26 Aug 2026 00:00:00 +0200</pubDate>
+      <guid>https://transportstyrelsen.varbi.com/en/what:job/jobID:962604/</guid>
+    </item>
+  </channel>
+</rss>
