@@ -312,8 +312,16 @@ Test-driven throughout.
 
 ## 9. Technical stack
 
-- Java 21, Spring Boot 3.x
-- **Maven Wrapper (`mvnw`)** — Maven is not installed on this machine
+- Java 21, **Spring Boot 4.1.1.RELEASE**
+- **Maven Wrapper (`mvnw`)** — Maven is not installed on this machine; the wrapper
+  was verified to bootstrap Maven 3.9.16 unaided
+
+> **Deviation from the original brief.** The brief specified Spring Boot 3.x. As of
+> 2026-08-27 `start.spring.io` no longer offers any 3.x line — the available versions
+> are 4.0.8.RELEASE and 4.1.1.RELEASE (default). Slice 1 therefore targets **4.1.1**.
+> Two Boot 4 renames matter for implementation and are easy to get wrong:
+> the web starter is `spring-boot-starter-webmvc` (not `-web`), and Flyway is pulled
+> via `spring-boot-starter-flyway` (not bare `flyway-core`).
 - PostgreSQL via Docker Compose
 - Spring Data JPA + Flyway
 - Spring Web, WireMock, Testcontainers
