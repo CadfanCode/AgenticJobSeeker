@@ -40,11 +40,10 @@ export function JobDetail() {
         {job.municipality ? ` · ${job.municipality}` : ''}
       </p>
 
+      {/* Only the ATS vendor here; the contributing sources are listed in full below. */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="text-xs text-slate-500">ATS</span>
         <SourceBadge label={job.atsVendor} />
-        {job.sources.map((s) => (
-          <SourceBadge key={`badge-${s.source}-${s.sourceAdId}`} label={s.source} />
-        ))}
       </div>
 
       {job.applyUrl && (
