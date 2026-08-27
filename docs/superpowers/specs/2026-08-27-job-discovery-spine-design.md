@@ -169,11 +169,21 @@ tested, because the same ad carries different URLs on `sverigedev.se`,
 instead:
 
 1. **`(source, source_ad_id)`** — natural key per source; prevents re-ingest.
-2. **`canonical_url`** — normalized: strip tracking/query params (notably `?promotion=`),
-   lowercase host, drop leading `www.`, drop trailing slash.
+2. **`employer_job_key`** — `host|job_id`, extracted from whichever URL carries a
+   recognizable ATS job id (Teamtailor `/jobs/<id>-<slug>`, Varbi `jobID:<id>`,
+   Greenhouse `gh_jid=<id>`). **This is the layer that catches the same job arriving
+   from JobTech *and* the employer's own ATS.** A title-equality guard prevents false
+   merges for employers that publish one generic apply URL for every vacancy.
 3. **Content fingerprint** — `SHA-256(employer_org_number | normalized_title |
-   description[:512])`. This is the layer that catches the same job arriving from
-   JobTech *and* Teamtailor.
+   description[:512])`, for sources whose URLs carry no job id.
+4. **`canonical_url`** — normalized (strip tracking params such as `?promotion=`,
+   lowercase host, drop `www.` and trailing slash) — final fallback.
+
+> **Corrected during implementation.** The fingerprint was originally specified as the
+> cross-source layer. Implementation disproved that: JobTech and Teamtailor describe the
+> same posting in different words, and Teamtailor feeds carry no employer org number, so
+> the fingerprints diverge. What both *do* share is the employer-side job id embedded in
+> their URLs, which is why `employer_job_key` now leads.
 
 `normalized_title` lowercases, strips punctuation and collapses whitespace.
 
@@ -214,7 +224,7 @@ substantially exceed `created` for tenant sources — that is expected, not a fa
 Flyway-migrated PostgreSQL.
 
 ```
-job_posting          id, fingerprint UNIQUE, canonical_url, title,
+job_posting          id, fingerprint UNIQUE, canonical_url, employer_job_key, title,
                      employer_name, employer_org_number, municipality,
                      description, language, ats_vendor, apply_url,
                      published_at, deadline_at, status,
