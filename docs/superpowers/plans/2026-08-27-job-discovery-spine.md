@@ -17,6 +17,15 @@
 - **Boot 4 starter names** (renamed from Boot 3 — using Boot 3 names fails):
   - web starter is `spring-boot-starter-webmvc`, **not** `spring-boot-starter-web`
   - Flyway is `spring-boot-starter-flyway`, **not** bare `flyway-core`
+- **Jackson 3, not Jackson 2.** Boot 4.1.1 resolves `tools.jackson.core:jackson-databind:3.1.5`.
+  Import `tools.jackson.databind.ObjectMapper` / `tools.jackson.databind.JsonNode` — **not**
+  `com.fasterxml.jackson.databind.*`, which does not exist on the classpath. `JsonNode.asText()`
+  was renamed to `asString()`. Only `jackson-annotations` still uses the old package.
+- **JSON needs its own starter.** Boot 4 unbundled JSON from the web starter; add
+  `spring-boot-starter-json` for `ObjectMapper` on the compile classpath.
+- **Test starters are modular.** Boot 4 has no single `spring-boot-starter-test`; the scaffold
+  ships `spring-boot-starter-webmvc-test`, `-data-jpa-test`, etc., plus `testcontainers-postgresql`
+  and `testcontainers-junit-jupiter` (not `org.testcontainers:postgresql`).
 - **Maven is not installed.** Always build with `./mvnw` from `backend/`. Export `JAVA_HOME=/usr/lib/jvm/default` first.
 - **Backend module lives in `backend/`; frontend in `frontend/`.** Root is a polyglot repo.
 - **Base package:** `se.caiowain.jobseeker`.

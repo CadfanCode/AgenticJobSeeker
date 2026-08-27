@@ -1,0 +1,50 @@
+{
+  "total": { "value": 2 },
+  "positions": 2,
+  "hits": [
+    {
+      "id": "31404250",
+      "headline": "Senior Fullstackutvecklare Java/Angular",
+      "description": {
+        "text": "Om foretaget Hos Avaron far du tryggheten i en fast anstallning kombinerat med variationen av att arbeta ute hos olika kunder."
+      },
+      "employer": {
+        "name": "Avaron AB",
+        "organization_number": "5591754279"
+      },
+      "workplace_address": {
+        "municipality": "Norrkoping",
+        "municipality_code": "0581"
+      },
+      "application_details": {
+        "url": "https://jobs.avaron.se/jobs/8278099-senior-fullstackutvecklare-java-angular/applications/new?promotion=2165239-arbetsformedlingen",
+        "reference": ""
+      },
+      "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31404250",
+      "publication_date": "2026-08-27T11:14:18+02:00",
+      "application_deadline": "2026-09-27T23:59:59+02:00"
+    },
+    {
+      "id": "962618",
+      "headline": "Portfolj- och modellansvarig ITSM",
+      "description": {
+        "text": "Vi far samhallet att fungera for manniskor pa vag, pa spar, i luften och pa sjon."
+      },
+      "employer": {
+        "name": "Transportstyrelsen",
+        "organization_number": "2021006038"
+      },
+      "workplace_address": {
+        "municipality": "Norrkoping",
+        "municipality_code": "0581"
+      },
+      "application_details": {
+        "url": "https://transportstyrelsen.varbi.com/se/what:job/jobID:962618/type:job/where:125/apply:1",
+        "reference": ""
+      },
+      "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/962618",
+      "publication_date": "2026-08-27T09:00:00+02:00",
+      "application_deadline": null
+    }
+  ]
+}
