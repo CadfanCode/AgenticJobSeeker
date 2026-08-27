@@ -1,0 +1,43 @@
+{
+  "version": "https://jsonfeed.org/version/1",
+  "title": "Avaron AB",
+  "home_page_url": "https://jobs.avaron.se",
+  "feed_url": "https://jobs.avaron.se/jobs.json",
+  "items": [
+    {
+      "id": "49f687e1-ceb1-4701-a5a0-14baf0f77d1d",
+      "title": "Senior Fullstackutvecklare Java/Angular",
+      "url": "https://jobs.avaron.se/jobs/8278099-senior-fullstackutvecklare-java-angular",
+      "date_published": "2026-08-26T16:56:37+02:00",
+      "content_html": "<h3>Om foretaget</h3><p>Hos Avaron far du tryggheten i en fast anstallning kombinerat med variationen av att arbeta ute hos olika kunder. Vi tillsatter specialister inom allt fran teknik till affarsstod.</p>",
+      "_jobposting": {
+        "@context": "http://schema.org/",
+        "@type": "JobPosting",
+        "title": "Senior Fullstackutvecklare Java/Angular",
+        "hiringOrganization": { "@type": "Organization", "name": "Avaron AB" },
+        "jobLocation": {
+          "@type": "Place",
+          "address": { "@type": "PostalAddress", "addressLocality": "Norrkoping" }
+        },
+        "validThrough": "2026-09-27T23:59:59+02:00"
+      }
+    },
+    {
+      "id": "aa11bb22-0000-4444-9999-ccddeeff0011",
+      "title": "Sjukskoterska till bemanning",
+      "url": "https://jobs.avaron.se/jobs/8279000-sjukskoterska-till-bemanning",
+      "date_published": "2026-08-25T10:00:00+02:00",
+      "content_html": "<p>Vi soker sjukskoterskor for uppdrag inom vard och omsorg.</p>",
+      "_jobposting": {
+        "@context": "http://schema.org/",
+        "@type": "JobPosting",
+        "title": "Sjukskoterska till bemanning",
+        "hiringOrganization": { "@type": "Organization", "name": "Avaron AB" },
+        "jobLocation": {
+          "@type": "Place",
+          "address": { "@type": "PostalAddress", "addressLocality": "Malmo" }
+        }
+      }
+    }
+  ]
+}
