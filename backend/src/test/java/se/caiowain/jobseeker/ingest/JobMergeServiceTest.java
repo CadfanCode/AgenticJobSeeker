@@ -119,4 +119,27 @@ class JobMergeServiceTest extends AbstractIntegrationTest {
                 .isEqualTo(MergeOutcome.CREATED);
         assertThat(postings.count()).isEqualTo(2);
     }
+
+    @Test
+    void identicalBoilerplateAtDifferentJobIdsStaysSeparate() {
+        // Real case: Aira posts the same role in many cities with byte-identical text.
+        // Teamtailor feeds expose no org number, so the fingerprints genuinely collide —
+        // only the employer-side job id distinguishes them.
+        String boilerplate = "About Aira Clean-energy tech leads to a positive global transition.";
+        RawJob first = new RawJob("f7ad41c4", "https://career.airahome.com/jobs/8139062-plumbing-and-heating-engineer",
+                "Plumbing and Heating Engineer", "Aira", null, null, boilerplate, null,
+                "https://career.airahome.com/jobs/8139062-plumbing-and-heating-engineer/applications/new",
+                null, null, "{}");
+        RawJob second = new RawJob("e63e75bd", "https://career.airahome.com/jobs/8097049-plumbing-and-heating-engineer",
+                "Plumbing and Heating Engineer", "Aira", null, null, boilerplate, null,
+                "https://career.airahome.com/jobs/8097049-plumbing-and-heating-engineer/applications/new",
+                null, null, "{}");
+
+        assertThat(merge.ingest(SourceId.TEAMTAILOR, first, AtsVendor.TEAMTAILOR))
+                .isEqualTo(MergeOutcome.CREATED);
+        assertThat(merge.ingest(SourceId.TEAMTAILOR, second, AtsVendor.TEAMTAILOR))
+                .isEqualTo(MergeOutcome.CREATED);
+
+        assertThat(postings.count()).isEqualTo(2);
+    }
 }

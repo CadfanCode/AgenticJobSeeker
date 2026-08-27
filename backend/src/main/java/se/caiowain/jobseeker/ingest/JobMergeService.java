@@ -42,7 +42,7 @@ public class JobMergeService {
         }
 
         String fingerprint = JobIdentity.fingerprint(
-                raw.employerOrgNumber(), raw.title(), raw.description());
+                raw.employerOrgNumber(), raw.title(), raw.description(), raw.municipality());
         String employerJobKey = JobIdentity.employerJobKey(raw.applyUrl(), raw.sourceUrl());
 
         // Layer 2 first: the employer-side job id is the only link that survives two
@@ -57,12 +57,14 @@ public class JobMergeService {
         }
         // Layer 3: identical content, for sources whose URLs carry no job id.
         if (existing.isEmpty()) {
-            existing = postings.findByFingerprint(fingerprint);
+            existing = postings.findByFingerprint(fingerprint).stream()
+                    .filter(p -> isSameJob(p, employerJobKey))
+                    .findFirst();
         }
         if (existing.isEmpty()) {
             String canonical = JobIdentity.canonicalUrl(raw.sourceUrl());
             if (canonical != null) {
-                existing = postings.findByCanonicalUrl(canonical);
+                existing = postings.findByCanonicalUrl(canonical).filter(p -> isSameJob(p, employerJobKey));
             }
         }
 
@@ -78,6 +80,21 @@ public class JobMergeService {
         postings.save(posting);
         attachSource(posting, source, raw);
         return MergeOutcome.CREATED;
+    }
+
+    /**
+     * A derivable employer job key is authoritative. Two records that both carry one and
+     * disagree are different vacancies, however identical their text.
+     *
+     * <p>Without this, an employer who posts the same role in ten cities with identical
+     * boilerplate collapses into a single posting: Teamtailor feeds expose no employer
+     * org number, so the content fingerprints are genuinely equal.
+     */
+    private boolean isSameJob(JobPosting candidate, String incomingEmployerJobKey) {
+        if (incomingEmployerJobKey == null || candidate.getEmployerJobKey() == null) {
+            return true;
+        }
+        return incomingEmployerJobKey.equals(candidate.getEmployerJobKey());
     }
 
     private JobPosting create(RawJob raw, AtsVendor vendor, String fingerprint, String employerJobKey) {

@@ -44,7 +44,7 @@ class JobPostingPersistenceTest extends AbstractIntegrationTest {
         b.setFetchedAt(Instant.now());
         sources.save(b);
 
-        assertThat(postings.findByFingerprint("fp-test-1")).isPresent();
+        assertThat(postings.findByFingerprint("fp-test-1")).hasSize(1);
         assertThat(sources.findBySourceAndSourceAdId(SourceId.JOBTECH, "31404250")).isPresent();
         assertThat(sources.findBySourceAndSourceAdId(SourceId.TEAMTAILOR, "49f687e1")).isPresent();
     }

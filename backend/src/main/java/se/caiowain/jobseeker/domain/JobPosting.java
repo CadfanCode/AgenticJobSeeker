@@ -14,7 +14,7 @@ public class JobPosting {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String fingerprint;
 
     @Column(name = "canonical_url", nullable = false, length = 1024)

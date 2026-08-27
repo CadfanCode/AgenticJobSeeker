@@ -90,6 +90,12 @@ public final class JobIdentity {
      * from JobTech and from the employer's own Teamtailor feed.
      */
     public static String fingerprint(String employerOrgNumber, String title, String description) {
+        return fingerprint(employerOrgNumber, title, description, null);
+    }
+
+    /** Overload including municipality, which separates the same role posted in many cities. */
+    public static String fingerprint(String employerOrgNumber, String title,
+                                     String description, String municipality) {
         String normalizedDescription = description == null ? "" : description;
         normalizedDescription = normalizedDescription
                 .replaceAll("\\s+", " ")
@@ -100,6 +106,7 @@ public final class JobIdentity {
         }
         String payload = (employerOrgNumber == null ? "" : employerOrgNumber.trim())
                 + "|" + normalizeTitle(title)
+                + "|" + (municipality == null ? "" : normalizeTitle(municipality))
                 + "|" + normalizedDescription;
         return sha256Hex(payload);
     }

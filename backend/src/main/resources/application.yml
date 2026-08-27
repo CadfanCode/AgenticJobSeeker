@@ -5,7 +5,7 @@ spring:
     compose:
       enabled: false
   datasource:
-    url: jdbc:postgresql://localhost:5432/job_db
+    url: jdbc:postgresql://localhost:5433/job_db
     username: jobseeker
     password: jobseeker
   jpa:

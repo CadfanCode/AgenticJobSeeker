@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface JobPostingRepository
         extends JpaRepository<JobPosting, Long>, JpaSpecificationExecutor<JobPosting> {
-    Optional<JobPosting> findByFingerprint(String fingerprint);
+    java.util.List<JobPosting> findByFingerprint(String fingerprint);
     Optional<JobPosting> findByCanonicalUrl(String canonicalUrl);
     java.util.List<JobPosting> findByEmployerJobKey(String employerJobKey);
 }

@@ -27,10 +27,26 @@ class SchemaMigrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void fingerprintIsUnique() {
-        Integer count = jdbc.queryForObject("""
+    void fingerprintIsIndexedButNotUnique() {
+        // The fingerprint is a lookup hint: employers publish the same role in several
+        // cities with identical text, so distinct vacancies legitimately share one.
+        Integer indexed = jdbc.queryForObject("""
+                select count(*) from pg_indexes
+                where tablename = 'job_posting' and indexdef like '%fingerprint%'
+                """, Integer.class);
+        Integer unique = jdbc.queryForObject("""
                 select count(*) from pg_indexes
                 where tablename = 'job_posting' and indexdef like '%UNIQUE%fingerprint%'
+                """, Integer.class);
+        assertThat(indexed).isGreaterThan(0);
+        assertThat(unique).isZero();
+    }
+
+    @Test
+    void employerJobKeyIsIndexed() {
+        Integer count = jdbc.queryForObject("""
+                select count(*) from pg_indexes
+                where tablename = 'job_posting' and indexdef like '%employer_job_key%'
                 """, Integer.class);
         assertThat(count).isGreaterThan(0);
     }
