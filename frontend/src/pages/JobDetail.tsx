@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { fetchJob } from '../api/client'
+import { fetchApplicationForJob, tailorJob } from '../api/applicationClient'
+import type { Application } from '../applicationTypes'
 import { SourceBadge } from '../components/SourceBadge'
 import type { JobDetail as Job } from '../types'
 
@@ -8,6 +10,11 @@ export function JobDetail() {
   const { id } = useParams<{ id: string }>()
   const [job, setJob] = useState<Job | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const navigate = useNavigate()
+  const [application, setApplication] = useState<Application | null>(null)
+  const [tailoring, setTailoring] = useState(false)
+  const [tailorError, setTailorError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -18,6 +25,25 @@ export function JobDetail() {
       })
       .catch((e: Error) => setError(e.message))
   }, [id])
+
+  useEffect(() => {
+    if (!id) return
+    fetchApplicationForJob(Number(id)).then(setApplication).catch(() => setApplication(null))
+  }, [id])
+
+  const runTailor = async () => {
+    if (!id) return
+    setTailoring(true)
+    setTailorError(null)
+    try {
+      const created = await tailorJob(Number(id))
+      navigate(`/applications/${created.id}`)
+    } catch (e) {
+      setTailorError((e as Error).message)
+    } finally {
+      setTailoring(false)
+    }
+  }
 
   if (error) {
     return (
@@ -56,6 +82,33 @@ export function JobDetail() {
           Apply on employer site
         </a>
       )}
+
+      <div className="mt-4">
+        {application ? (
+          <Link
+            to={`/applications/${application.id}`}
+            className="inline-block rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50"
+          >
+            View tailored application ({application.coveragePercent}% match)
+          </Link>
+        ) : (
+          <button
+            onClick={runTailor}
+            disabled={tailoring}
+            className="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
+          >
+            {tailoring ? 'Matching your CV… (1–2 min)' : 'Tailor for this job'}
+          </button>
+        )}
+        {tailoring && (
+          <p className="mt-2 text-xs text-slate-500">
+            A local model is matching your CV bullets to this ad. Nothing leaves your machine.
+          </p>
+        )}
+        {tailorError && (
+          <p className="mt-2 rounded-md bg-red-50 p-3 text-sm text-red-700">{tailorError}</p>
+        )}
+      </div>
 
       <section className="mt-8">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">

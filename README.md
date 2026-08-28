@@ -98,6 +98,10 @@ Slice 2a — CV profile ingestion:
 - Spec: `docs/superpowers/specs/2026-08-27-cv-profile-ingestion-design.md`
 - Plan: `docs/superpowers/plans/2026-08-27-cv-profile-ingestion.md`
 
+Slice 2b — extractive tailoring:
+- Spec: `docs/superpowers/specs/2026-08-28-extractive-tailoring-design.md`
+- Plan: `docs/superpowers/plans/2026-08-28-extractive-tailoring.md`
+
 ## CV profile
 
 Slice 2a ingests your CV so Slice 2b can tailor from it. Upload a PDF at
@@ -110,14 +114,16 @@ The guard is one-directional by design: it proves that what was extracted is pre
 your CV, not that nothing was missed. Spotting omissions is what the side-by-side review
 is for — raw PDF text on the left, the structured form on the right.
 
-Extraction needs a model credential:
+Extraction and tailoring both run on a **local Ollama model** — no API key, no cost, and
+your CV never leaves the machine.
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+~/.local/ollama/bin/ollama serve &
+~/.local/ollama/bin/ollama pull qwen2.5:7b-instruct
 ```
 
-Without it the application still starts and job discovery works normally; CV upload
-returns `503`. Uploading the same file twice is idempotent — no second extraction, and
+With Ollama stopped the application still starts and job discovery works normally; CV
+upload and tailoring return `503`. Uploading the same file twice is idempotent — no second extraction, and
 no risk of overwriting corrections you already made.
 
 | Method | Path | Purpose |
@@ -129,8 +135,46 @@ no risk of overwriting corrections you already made.
 | `POST` | `/api/profile/approve` | Mark the profile reviewed |
 | `GET` | `/api/profile/source-text` | Raw text read from the PDF |
 
+## Tailored applications
+
+Open a job and choose **Tailor for this job**. A local model reads the ad and your CV, then
+returns *only* bullet numbers and requirement phrases quoted from the ad. Everything you
+would send an employer is assembled from sentences you wrote.
+
+That is a structural guarantee, not a filter: the model cannot express a claim about you,
+because the only thing it can say about you is an integer pointing at one of your own
+bullets. Three guards enforce it — unknown bullet numbers and phrases absent from the ad
+reject the whole result; over-broad matches are flagged for you to check.
+
+Requirements with **no** matching bullet are highlighted. That gap is the most useful output
+on the page: it is the honest distance between you and the job.
+
+Generation takes 45–90 seconds on CPU.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/jobs/{id}/tailor` | Generate the application package |
+| `GET` | `/api/jobs/{id}/application` | The application for a job |
+| `GET` | `/api/applications` | The queue |
+| `PUT` | `/api/applications/{id}/letter` | Save your prose |
+| `POST` | `/api/applications/{id}/approve` | Mark reviewed |
+| `DELETE` | `/api/applications/{id}` | Discard |
+
+### What it deliberately does not do
+
+It does not write your cover letter. A 7B model on this hardware produced unpublishable
+Swedish and invented support experience the candidate never had, so prose generation was
+cut. It also does not translate, since translating is generating.
+
+### Read the coverage figure with care
+
+The model is generous. In live testing it cited one strong bullet against four different
+requirements, including a joke requirement in the ad. Nothing it produced was untrue —
+every word is yours — but a high coverage percentage means "the model found something to
+point at", not "you are a strong match". The requirement-by-requirement view below the bar
+is the honest read.
+
 ## Not in this slice
 
-Tailored CV and cover-letter generation, translation, PDF rendering and the approval
-queue (Slice 2b); Playwright application submission (Slice 3); metrics and settings
-(Slice 4).
+PDF rendering of the tailored application (Slice 2c); Playwright application submission
+(Slice 3); metrics and settings (Slice 4).

@@ -1,19 +1,17 @@
 package se.caiowain.jobseeker.profile.extract;
 
-import com.anthropic.models.messages.OutputConfig;
-import com.anthropic.models.messages.ThinkingConfigAdaptive;
-import com.anthropic.models.messages.ThinkingConfigParam;
-import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
  * The only component in the application that calls a language model.
  *
- * <p>Availability is decided by reading the configured API key, not by checking for a bean:
- * Spring AI's autoconfiguration creates {@code ChatModel} and {@code ChatClient.Builder}
- * beans even when no key is set, so bean presence proves nothing.
+ * <p>Availability is decided by reading the configured model name, not by checking for a
+ * bean: Spring AI's autoconfiguration creates {@code ChatModel} and {@code ChatClient.Builder}
+ * beans regardless of configuration, so bean presence proves nothing. A local model needs
+ * no credential — availability means a model is configured.
  */
 @Component
 public class CvProfileExtractor {
@@ -35,22 +33,20 @@ public class CvProfileExtractor {
             """;
 
     private final ChatClient.Builder chatClientBuilder;
-    private final String apiKey;
     private final String model;
-    private final String effort;
+    private final String baseUrl;
 
     public CvProfileExtractor(ChatClient.Builder chatClientBuilder,
-                              @Value("${spring.ai.anthropic.api-key:}") String apiKey,
-                              @Value("${spring.ai.anthropic.chat.options.model:claude-opus-5}") String model,
-                              @Value("${jobseeker.profile.extraction-effort:HIGH}") String effort) {
+                              @Value("${spring.ai.ollama.chat.options.model:}") String model,
+                              @Value("${spring.ai.ollama.base-url:}") String baseUrl) {
         this.chatClientBuilder = chatClientBuilder;
-        this.apiKey = apiKey;
         this.model = model;
-        this.effort = effort;
+        this.baseUrl = baseUrl;
     }
 
+    /** A local model needs no credential; availability means a model is configured. */
     public boolean isAvailable() {
-        return apiKey != null && !apiKey.isBlank();
+        return model != null && !model.isBlank();
     }
 
     public String modelName() {
@@ -60,17 +56,15 @@ public class CvProfileExtractor {
     public ExtractedProfile extract(String sourceText) {
         if (!isAvailable()) {
             throw new ExtractionUnavailableException(
-                    "CV extraction needs a model credential. Set ANTHROPIC_API_KEY and restart.");
+                    "CV extraction needs a local model. Start Ollama and set "
+                            + "spring.ai.ollama.chat.options.model.");
         }
         try {
             return chatClientBuilder.build()
                     .prompt()
                     .system(SYSTEM_PROMPT)
                     .user("Extract this CV:\n\n" + sourceText)
-                    .options(AnthropicChatOptions.builder()
-                            .thinking(ThinkingConfigParam.ofAdaptive(
-                                    ThinkingConfigAdaptive.builder().build()))
-                            .effort(OutputConfig.Effort.of(effort)))
+                    .options(OllamaChatOptions.builder().format("json"))
                     .call()
                     .entity(ExtractedProfile.class);
         } catch (Exception e) {

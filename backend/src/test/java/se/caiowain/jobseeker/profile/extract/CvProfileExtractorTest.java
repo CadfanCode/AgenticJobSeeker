@@ -42,23 +42,23 @@ class CvProfileExtractorTest {
 
     @Test
     void reportsUnavailableWhenNoApiKeyIsConfigured() {
-        var extractor = new CvProfileExtractor(stubbedBuilder(CANNED), "", "claude-opus-5", "HIGH");
+        var extractor = new CvProfileExtractor(stubbedBuilder(CANNED), "", "http://localhost:11434");
 
         assertThat(extractor.isAvailable()).isFalse();
         assertThatThrownBy(() -> extractor.extract("some cv text"))
                 .isInstanceOf(ExtractionUnavailableException.class)
-                .hasMessageContaining("ANTHROPIC_API_KEY");
+                .hasMessageContaining("Ollama");
     }
 
     @Test
     void isAvailableWhenAKeyIsConfigured() {
-        var extractor = new CvProfileExtractor(stubbedBuilder(CANNED), "sk-ant-test", "claude-opus-5", "HIGH");
+        var extractor = new CvProfileExtractor(stubbedBuilder(CANNED), "qwen2.5:7b-instruct", "http://localhost:11434");
         assertThat(extractor.isAvailable()).isTrue();
     }
 
     @Test
     void returnsTheStructuredProfileFromTheModel() {
-        var extractor = new CvProfileExtractor(stubbedBuilder(CANNED), "sk-ant-test", "claude-opus-5", "HIGH");
+        var extractor = new CvProfileExtractor(stubbedBuilder(CANNED), "qwen2.5:7b-instruct", "http://localhost:11434");
 
         ExtractedProfile result = extractor.extract("Cai Wain\nSenior Engineer, Acme AB\n2019 - present");
 
@@ -70,7 +70,7 @@ class CvProfileExtractorTest {
     @Test
     void passesTheSourceTextToTheModel() {
         ChatClient.Builder builder = stubbedBuilder(CANNED);
-        var extractor = new CvProfileExtractor(builder, "sk-ant-test", "claude-opus-5", "HIGH");
+        var extractor = new CvProfileExtractor(builder, "qwen2.5:7b-instruct", "http://localhost:11434");
 
         extractor.extract("MARKER-TEXT-12345");
 
@@ -82,8 +82,8 @@ class CvProfileExtractorTest {
 
     @Test
     void reportsTheConfiguredModelName() {
-        var extractor = new CvProfileExtractor(stubbedBuilder(CANNED), "sk-ant-test", "claude-opus-5", "HIGH");
-        assertThat(extractor.modelName()).isEqualTo("claude-opus-5");
+        var extractor = new CvProfileExtractor(stubbedBuilder(CANNED), "qwen2.5:7b-instruct", "http://localhost:11434");
+        assertThat(extractor.modelName()).isEqualTo("qwen2.5:7b-instruct");
     }
 
     @Test
@@ -102,7 +102,7 @@ class CvProfileExtractorTest {
         ChatClient.Builder builder = mock(ChatClient.Builder.class);
         when(builder.build()).thenReturn(client);
 
-        var extractor = new CvProfileExtractor(builder, "sk-ant-test", "claude-opus-5", "HIGH");
+        var extractor = new CvProfileExtractor(builder, "qwen2.5:7b-instruct", "http://localhost:11434");
 
         assertThatThrownBy(() -> extractor.extract("text"))
                 .isInstanceOf(CvProfileExtractor.ExtractionFailedException.class)

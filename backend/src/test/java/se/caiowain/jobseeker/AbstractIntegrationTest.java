@@ -26,5 +26,9 @@ public abstract class AbstractIntegrationTest {
         // Global constraint: no test may reach a live job board. Any source bean that is
         // autowired rather than hand-built in a test points at a dead local port.
         registry.add("jobseeker.sources.jobtech.base-url", () -> "http://127.0.0.1:1");
+        // No test may reach a model host. Point Ollama at a dead port and leave the model
+        // name set, so availability logic is exercised without any network call.
+        registry.add("spring.ai.ollama.base-url", () -> "http://127.0.0.1:1");
+        registry.add("spring.ai.ollama.chat.options.model", () -> "qwen2.5:7b-instruct");
     }
 }
