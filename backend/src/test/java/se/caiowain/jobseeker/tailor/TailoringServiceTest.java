@@ -166,7 +166,7 @@ class TailoringServiceTest extends AbstractIntegrationTest {
         service.approve(app.getId());
 
         assertThatThrownBy(() -> service.tailor(jobId))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ApplicationAlreadyApprovedException.class)
                 .hasMessageContaining("Discard");
     }
 

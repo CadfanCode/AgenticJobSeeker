@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import se.caiowain.jobseeker.tailor.ApplicationAlreadyApprovedException;
 import se.caiowain.jobseeker.tailor.ProfileNotReadyException;
 import se.caiowain.jobseeker.tailor.TailoringRejectedException;
 import se.caiowain.jobseeker.tailor.TailoringUnavailableException;
@@ -35,8 +36,8 @@ public class TailoringExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
-    @ExceptionHandler(IllegalStateException.class)
-    ProblemDetail conflict(IllegalStateException e) {
+    @ExceptionHandler(ApplicationAlreadyApprovedException.class)
+    ProblemDetail alreadyApproved(ApplicationAlreadyApprovedException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
     }
 }

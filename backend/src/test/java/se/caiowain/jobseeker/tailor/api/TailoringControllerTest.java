@@ -157,6 +157,18 @@ class TailoringControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void reTailoringAnApprovedApplicationReturns409NotSomeOtherStatus() throws Exception {
+        // Regression: Slice 2a's advice also handles IllegalStateException and maps it to
+        // 404, so a generic exception here resolved to the wrong status at runtime.
+        mvc.perform(post("/api/jobs/" + jobId + "/tailor")).andExpect(status().isCreated());
+        Long id = applications.findFirstByJobPostingIdOrderByIdDesc(jobId).orElseThrow().getId();
+        mvc.perform(post("/api/applications/" + id + "/approve")).andExpect(status().isOk());
+
+        mvc.perform(post("/api/jobs/" + jobId + "/tailor"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void savesProseApprovesAndDiscards() throws Exception {
         String body = mvc.perform(post("/api/jobs/" + jobId + "/tailor"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();

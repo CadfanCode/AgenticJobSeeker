@@ -74,7 +74,7 @@ public class TailoringService {
                 applications.findByJobPostingIdAndCvProfileId(jobId, profile.getId());
         if (existing.isPresent()) {
             if (existing.get().getStatus() == ApplicationStatus.APPROVED) {
-                throw new IllegalStateException(
+                throw new ApplicationAlreadyApprovedException(
                         "This job already has an approved application. Discard it first.");
             }
             applications.delete(existing.get());
