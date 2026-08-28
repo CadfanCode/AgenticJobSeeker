@@ -24,6 +24,12 @@ export function JobList() {
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
+      <nav className="mb-4 flex gap-4 text-sm">
+        <span className="font-medium text-slate-900">Jobs</span>
+        <Link to="/profile" className="text-slate-600 hover:underline">
+          My CV profile
+        </Link>
+      </nav>
       <StatsHeader onIngested={load} />
       <JobFilters value={filters} onChange={setFilters} />
 

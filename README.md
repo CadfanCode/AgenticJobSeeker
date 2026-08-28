@@ -90,10 +90,47 @@ cd frontend && npm run build         # typecheck + build
 
 ## Design documents
 
+Slice 1 — job discovery spine:
 - Spec: `docs/superpowers/specs/2026-08-27-job-discovery-spine-design.md`
 - Plan: `docs/superpowers/plans/2026-08-27-job-discovery-spine.md`
 
+Slice 2a — CV profile ingestion:
+- Spec: `docs/superpowers/specs/2026-08-27-cv-profile-ingestion-design.md`
+- Plan: `docs/superpowers/plans/2026-08-27-cv-profile-ingestion.md`
+
+## CV profile
+
+Slice 2a ingests your CV so Slice 2b can tailor from it. Upload a PDF at
+`http://localhost:5173/profile`; PDFBox extracts the text, Claude structures it, and a
+validator checks that every extracted employer, title and date actually appears in your
+PDF. Anything it cannot find is flagged amber for you to check rather than silently
+trusted.
+
+The guard is one-directional by design: it proves that what was extracted is present in
+your CV, not that nothing was missed. Spotting omissions is what the side-by-side review
+is for — raw PDF text on the left, the structured form on the right.
+
+Extraction needs a model credential:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Without it the application still starts and job discovery works normally; CV upload
+returns `503`. Uploading the same file twice is idempotent — no second extraction, and
+no risk of overwriting corrections you already made.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/profile/upload` | Upload a CV PDF and extract it |
+| `GET` | `/api/profile` | Current profile |
+| `PUT` | `/api/profile` | Save corrections |
+| `POST` | `/api/profile/reextract` | Re-run extraction from stored text |
+| `POST` | `/api/profile/approve` | Mark the profile reviewed |
+| `GET` | `/api/profile/source-text` | Raw text read from the PDF |
+
 ## Not in this slice
 
-AI CV/cover-letter tailoring (Slice 2), Playwright application submission (Slice 3),
-and metrics/settings (Slice 4).
+Tailored CV and cover-letter generation, translation, PDF rendering and the approval
+queue (Slice 2b); Playwright application submission (Slice 3); metrics and settings
+(Slice 4).
