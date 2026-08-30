@@ -57,9 +57,12 @@ public class JobController {
         var results = queries.search(q, municipality, vendor, source, sort, triage,
                 includeGateFailures, page, Math.min(size, 100));
 
-        // Two extra queries for the whole page, rather than two per row. The inverse
-        // associations exist so the query above can join; they are deliberately not
-        // navigated here, because a lazy to-one still costs a select each.
+        // Overhead, not an optimisation. A mappedBy @OneToOne cannot be a true lazy proxy
+        // without bytecode enhancement, so Hibernate already issues one select per posting
+        // per association (prescreen, triage) while materialising the page above — before
+        // this line runs. These two batch lookups add two more queries on top of that; they
+        // do not replace the per-row cost. Left as a known inefficiency for a follow-up
+        // task rather than restructured here.
         List<Long> ids = results.getContent().stream().map(JobPosting::getId).toList();
         Map<Long, JobPrescreen> fits = ids.isEmpty() ? Map.of()
                 : prescreens.findByJobPostingIdIn(ids).stream()

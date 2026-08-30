@@ -15,9 +15,12 @@ import se.caiowain.jobseeker.fit.domain.TriageState;
 import se.caiowain.jobseeker.fit.repo.JobPreferencesRepository;
 import se.caiowain.jobseeker.fit.repo.JobPrescreenRepository;
 import se.caiowain.jobseeker.fit.repo.JobTriageRepository;
+import se.caiowain.jobseeker.domain.JobPosting;
 import se.caiowain.jobseeker.profile.repo.CvDocumentRepository;
 import se.caiowain.jobseeker.profile.repo.CvProfileRepository;
 import se.caiowain.jobseeker.repo.JobPostingRepository;
+
+import java.time.Instant;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -62,10 +65,20 @@ class JobListFitTest extends AbstractIntegrationTest {
                 documents.save(FitFixtures.document("e".repeat(64))),
                 "Java", "Kubernetes", "Docker"));
 
-        strongId = jobs.save(FitFixtures.posting("strong", "Plattformsingenjör",
-                "Vi kör Java, Kubernetes och Docker i produktion.", "Stockholm")).getId();
-        weakId = jobs.save(FitFixtures.posting("weak", "Utvecklare",
-                "Vi kör Java i produktion.", "Stockholm")).getId();
+        // Distinct publishedAt values, deliberately: FitFixtures.posting gives every
+        // posting the same timestamp, which would make an ordering assertion over the
+        // default (newest-first) view pass or fail by accident. strong is the newer of the
+        // two visible postings, so theDefaultSortIsStillNewestFirst has a real order to check.
+        JobPosting strong = FitFixtures.posting("strong", "Plattformsingenjör",
+                "Vi kör Java, Kubernetes och Docker i produktion.", "Stockholm");
+        strong.setPublishedAt(Instant.parse("2026-08-30T08:00:00Z"));
+        strongId = jobs.save(strong).getId();
+
+        JobPosting weak = FitFixtures.posting("weak", "Utvecklare",
+                "Vi kör Java i produktion.", "Stockholm");
+        weak.setPublishedAt(Instant.parse("2026-08-28T08:00:00Z"));
+        weakId = jobs.save(weak).getId();
+
         vetoedId = jobs.save(FitFixtures.posting("vetoed", "Konsult",
                 "Vi kräver flytande engelska. Vi kör Java, Kubernetes och Docker.",
                 "Stockholm")).getId();
@@ -152,6 +165,8 @@ class JobListFitTest extends AbstractIntegrationTest {
     void theDefaultSortIsStillNewestFirst() throws Exception {
         mvc.perform(get("/api/jobs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.length()").value(2));
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].id").value(strongId))
+                .andExpect(jsonPath("$.content[1].id").value(weakId));
     }
 }
