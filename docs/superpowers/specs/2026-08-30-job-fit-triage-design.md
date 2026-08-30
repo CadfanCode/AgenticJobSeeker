@@ -263,8 +263,14 @@ candidate_language    job_preferences_id FK, language, level, ordinal
                              < PROFESSIONAL < FLUENT < NATIVE
 
 job_prescreen         DISPOSABLE. Truncated and rebuilt on every prescreen run.
-                      Per (job_posting, cv_profile).
-                      job_posting_id FK, cv_profile_id FK,
+                      Keyed on job_posting_id alone, not on (job_posting, cv_profile):
+                      only one cv_profile is ever READY at a time, so the one-row-
+                      per-posting invariant the rebuild relies on is made database-
+                      enforced (a UNIQUE index) rather than merely assumed by the
+                      code that truncates and rebuilds it. cv_profile_id is still a
+                      column, stamped on each row to record which profile produced
+                      it, but it is not part of the row's identity.
+                      job_posting_id FK UNIQUE, cv_profile_id FK,
                       matched_skill_count INT,
                       matched_skills TEXT (comma-separated names, for display),
                       language_gate, language_note,
@@ -296,7 +302,7 @@ its gaps. There is no approval state here to protect, so unlike 2b there is no `
 `level` is an ordered enum rather than free text because a deterministic gate needs a
 comparison. The upstream framework reasons about levels in prose; a veto cannot.
 
-Indexes: unique on `job_prescreen (job_posting_id, cv_profile_id)`, unique on
+Indexes: unique on `job_prescreen (job_posting_id)`, unique on
 `job_deep_fit (job_posting_id, cv_profile_id)`, unique on `job_triage (job_posting_id)`,
 `job_prescreen (matched_skill_count DESC)`, `job_deep_fit_gap (job_deep_fit_id)`.
 
@@ -326,8 +332,10 @@ verdicts and the triage state.
 - **`JobList` row** — an `8/22 skills` chip listing the matched names on hover, a gate badge
   (amber FLAG, red FAIL, grey UNKNOWN), and shortlist / dismiss actions.
 - **`JobDetail`** — a *Score this job* action beside the existing *Tailor for this job*.
-  Renders coverage, the matched requirements and the unmet ones. A gate verdict always shows
-  the phrase that produced it.
+  Renders `coverage_percent` and the requirements matching nothing, matching §2.3's table —
+  not the matched requirements themselves. Per-requirement matched detail is available by
+  tailoring the job instead: Slice 2b's application already persists exactly that. A gate
+  verdict always shows the phrase that produced it.
 
 Deep scoring shows the same one-to-two-minute spinner as tailoring, because it is the same
 call.

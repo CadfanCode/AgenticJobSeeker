@@ -99,8 +99,13 @@ public class PrescreenService {
     }
 
     /**
-     * For callers that want the ranking refreshed but must not fail without it — ingest runs
-     * long before a CV is ever approved. Returns empty when there is nothing to rank against.
+     * For callers that want the ranking refreshed but must not fail without it —
+     * {@code IngestController} calls this after the ingest has already committed, so nothing
+     * here may turn a successful ingest into a reported failure. Swallows everything by
+     * design, not just {@link ProfileNotReadyException}: a missing preferences row
+     * ({@code IllegalStateException}), a lock timeout, or any other database error while
+     * rebuilding the ranking must be logged and absorbed here rather than propagated, for the
+     * same reason. Returns empty whenever nothing could be ranked, whatever the cause.
      *
      * <p>{@code @Transactional} here, not just on {@link #run()}: {@code this.run()} is a
      * self-invocation, so it never passes through {@code run()}'s own proxy advice. Without a
@@ -108,16 +113,17 @@ public class PrescreenService {
      * {@code deleteAllInBatch()} and {@code saveAll(rows)} would each commit separately, and a
      * crash between them would leave {@code job_prescreen} truncated rather than rebuilt. With
      * the transaction opened here, the self-invoked {@code run()} body simply participates in
-     * it. Catching {@link ProfileNotReadyException} inside is still safe: the exception never
-     * crosses a transactional proxy boundary, so it cannot mark this transaction
-     * rollback-only.
+     * it, and catching broadly inside it is still safe: none of these exceptions cross a
+     * transactional proxy boundary, so none of them can mark this transaction rollback-only —
+     * and a genuine database failure (the lock timeout, say) aborts the underlying transaction
+     * on its own regardless of what Java code here catches.
      */
     @Transactional
     public Optional<PrescreenSummary> runQuietly() {
         try {
             return Optional.of(run());
-        } catch (ProfileNotReadyException e) {
-            log.info("Skipping the ranking after ingest: {}", e.getMessage());
+        } catch (Exception e) {
+            log.warn("Skipping the ranking after ingest: {}", e.getMessage(), e);
             return Optional.empty();
         }
     }

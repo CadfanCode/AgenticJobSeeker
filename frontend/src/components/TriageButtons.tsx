@@ -10,12 +10,16 @@ interface Props {
 
 export function TriageButtons({ jobId, state, onChanged }: Props) {
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const decide = async (next: TriageState) => {
     setBusy(true)
+    setError(null)
     try {
       await setTriage(jobId, next)
       onChanged()
+    } catch (e) {
+      setError((e as Error).message)
     } finally {
       setBusy(false)
     }
@@ -27,21 +31,28 @@ export function TriageButtons({ jobId, state, onChanged }: Props) {
     }`
 
   return (
-    <div className="flex gap-2">
-      <button
-        disabled={busy}
-        onClick={() => decide(state === 'SHORTLISTED' ? 'NEW' : 'SHORTLISTED')}
-        className={style(state === 'SHORTLISTED')}
-      >
-        Shortlist
-      </button>
-      <button
-        disabled={busy}
-        onClick={() => decide(state === 'DISMISSED' ? 'NEW' : 'DISMISSED')}
-        className={style(state === 'DISMISSED')}
-      >
-        Dismiss
-      </button>
+    <div className="flex flex-col items-end gap-1">
+      <div className="flex gap-2">
+        <button
+          disabled={busy}
+          onClick={() => decide(state === 'SHORTLISTED' ? 'NEW' : 'SHORTLISTED')}
+          className={style(state === 'SHORTLISTED')}
+        >
+          Shortlist
+        </button>
+        <button
+          disabled={busy}
+          onClick={() => decide(state === 'DISMISSED' ? 'NEW' : 'DISMISSED')}
+          className={style(state === 'DISMISSED')}
+        >
+          Dismiss
+        </button>
+      </div>
+      {error && (
+        <span title={error} className="text-xs text-red-700">
+          Failed to save
+        </span>
+      )}
     </div>
   )
 }

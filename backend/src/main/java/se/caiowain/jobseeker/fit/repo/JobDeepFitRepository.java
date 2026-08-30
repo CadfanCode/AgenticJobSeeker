@@ -7,5 +7,4 @@ import java.util.Optional;
 
 public interface JobDeepFitRepository extends JpaRepository<JobDeepFit, Long> {
     Optional<JobDeepFit> findByJobPostingIdAndCvProfileId(Long jobPostingId, Long cvProfileId);
-    Optional<JobDeepFit> findFirstByJobPostingIdOrderByDeepScoredAtDesc(Long jobPostingId);
 }

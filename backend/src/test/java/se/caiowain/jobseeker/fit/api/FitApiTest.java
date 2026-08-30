@@ -177,6 +177,14 @@ class FitApiTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void aTriageRequestWithNoStateIsRejectedAsABadRequest() throws Exception {
+        mvc.perform(put("/api/jobs/" + jobId + "/triage")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"note\":\"maybe\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void preferencesRoundTripIncludingLanguages() throws Exception {
         mvc.perform(put("/api/preferences")
                         .contentType(MediaType.APPLICATION_JSON)

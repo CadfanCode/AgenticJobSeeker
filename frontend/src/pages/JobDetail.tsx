@@ -139,7 +139,7 @@ export function JobDetail() {
           Requirement coverage
         </h2>
 
-        {fit ? (
+        {fit && (
           <>
             <p className="text-sm text-slate-800">
               Your own bullets answer <strong>{fit.coveragePercent}%</strong> of the{' '}
@@ -165,15 +165,15 @@ export function JobDetail() {
               </div>
             )}
           </>
-        ) : (
-          <button
-            onClick={runScore}
-            disabled={scoring}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
-          >
-            {scoring ? 'Reading the ad… (1–2 min)' : 'Score this job'}
-          </button>
         )}
+
+        <button
+          onClick={runScore}
+          disabled={scoring}
+          className={`rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50 ${fit ? 'mt-3' : ''}`}
+        >
+          {scoring ? 'Reading the ad… (1–2 min)' : fit ? 'Score again' : 'Score this job'}
+        </button>
 
         {fitError && (
           <p className="mt-2 rounded-md bg-red-50 p-3 text-sm text-red-700">{fitError}</p>

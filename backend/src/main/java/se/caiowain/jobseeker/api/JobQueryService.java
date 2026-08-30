@@ -75,7 +75,13 @@ public class JobQueryService {
                 predicates.add(cb.exists(sub));
             }
 
-            if (triage != null) {
+            if (triage == TriageState.NEW) {
+                // An undecided posting has no triage row at all, not a row whose state is
+                // NEW — so matching only an explicit NEW row would return almost nothing.
+                predicates.add(cb.or(
+                        decision.get("state").isNull(),
+                        cb.equal(decision.get("state"), TriageState.NEW)));
+            } else if (triage != null) {
                 predicates.add(cb.equal(decision.get("state"), triage));
             } else {
                 // Undecided jobs have no row at all, so the null case is the common one.

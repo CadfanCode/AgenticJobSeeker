@@ -3,6 +3,9 @@ interface Props {
   names: string | null
 }
 
+/** Presentational only — where the chip switches to the "strong match" dark styling. */
+const STRONG_MATCH_THRESHOLD = 3
+
 /**
  * A count of facts, not a score. The names are on the title attribute so the number is
  * always checkable — that is the whole point of counting rather than scoring.
@@ -16,7 +19,7 @@ export function SkillMatchChip({ matched, names }: Props) {
   if (matched === null) {
     return <span className="text-xs text-slate-400">not ranked</span>
   }
-  const strong = matched >= 3
+  const strong = matched >= STRONG_MATCH_THRESHOLD
   return (
     <span
       title={names && names.length > 0 ? names : 'No skills from your profile appear in this ad'}

@@ -50,7 +50,10 @@ class PreferencesPersistenceTest extends AbstractIntegrationTest {
         JobPreferences prefs = preferences.findSingleton();
         prefs.setAcceptableMunicipalities("Stockholm, Solna ,Sundbyberg");
 
-        assertThat(prefs.acceptableMunicipalityList())
+        preferences.saveAndFlush(prefs);
+        JobPreferences reloaded = preferences.findSingleton();
+
+        assertThat(reloaded.acceptableMunicipalityList())
                 .containsExactly("Stockholm", "Solna", "Sundbyberg");
     }
 

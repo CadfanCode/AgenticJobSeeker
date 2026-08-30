@@ -1,5 +1,6 @@
 package se.caiowain.jobseeker.fit.api;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,8 @@ import se.caiowain.jobseeker.fit.domain.JobDeepFit;
 import se.caiowain.jobseeker.fit.domain.JobDeepFitGap;
 import se.caiowain.jobseeker.fit.domain.JobTriage;
 import se.caiowain.jobseeker.fit.repo.JobDeepFitRepository;
+import se.caiowain.jobseeker.profile.domain.ProfileStatus;
+import se.caiowain.jobseeker.profile.repo.CvProfileRepository;
 
 @RestController
 public class FitController {
@@ -22,13 +25,16 @@ public class FitController {
     private final DeepFitService deepFit;
     private final TriageService triage;
     private final JobDeepFitRepository deepFits;
+    private final CvProfileRepository profiles;
 
     public FitController(PrescreenService prescreen, DeepFitService deepFit,
-                         TriageService triage, JobDeepFitRepository deepFits) {
+                         TriageService triage, JobDeepFitRepository deepFits,
+                         CvProfileRepository profiles) {
         this.prescreen = prescreen;
         this.deepFit = deepFit;
         this.triage = triage;
         this.deepFits = deepFits;
+        this.profiles = profiles;
     }
 
     /** Cheap and corpus-wide. Works with Ollama stopped. */
@@ -45,16 +51,24 @@ public class FitController {
         return toDto(deepFit.score(id));
     }
 
+    /**
+     * Scoped to the current {@code READY} profile, the same one {@link DeepFitService#score}
+     * would use — a score from a superseded profile must never be served as though it
+     * describes the CV on file today. No ready profile, or no row for it, is an ordinary
+     * "not scored yet" state: 404, same as the frontend already expects.
+     */
     @GetMapping("/api/jobs/{id}/fit")
     @Transactional(readOnly = true)
     public ResponseEntity<DeepFitDto> latest(@PathVariable Long id) {
-        return deepFits.findFirstByJobPostingIdOrderByDeepScoredAtDesc(id)
+        return profiles.findFirstByOrderByIdDesc()
+                .filter(p -> p.getStatus() == ProfileStatus.READY)
+                .flatMap(profile -> deepFits.findByJobPostingIdAndCvProfileId(id, profile.getId()))
                 .map(fit -> ResponseEntity.ok(toDto(fit)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PutMapping("/api/jobs/{id}/triage")
-    public TriageRequest decide(@PathVariable Long id, @RequestBody TriageRequest request) {
+    public TriageRequest decide(@PathVariable Long id, @Valid @RequestBody TriageRequest request) {
         JobTriage decision = triage.decide(id, request.state(), request.note());
         return new TriageRequest(decision.getState(), decision.getNote());
     }

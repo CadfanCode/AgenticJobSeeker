@@ -95,6 +95,10 @@ class PrescreenServiceTest extends AbstractIntegrationTest {
     void aMultiWordSkillNeedsItsWordsAdjacent() {
         // phraseto_tsquery, not plainto_tsquery: an ad mentioning Spring in one sentence
         // and boot in another must not count as Spring Boot.
+        //
+        // This asserts an absence, so it only proves anything paired with
+        // anAdjacentMultiWordSkillDoesMatch below — that positive control is what shows the
+        // match itself still works and this isn't just a broken query matching nothing.
         jobs.save(FitFixtures.posting("loose", "Utvecklare",
                 "Vi arbetar med Spring i backend. Vi har även ett boot camp för nyanställda.",
                 "Stockholm"));
