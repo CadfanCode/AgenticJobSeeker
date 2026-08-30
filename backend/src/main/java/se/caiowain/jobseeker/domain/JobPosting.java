@@ -2,6 +2,7 @@ package se.caiowain.jobseeker.domain;
 
 import jakarta.persistence.*;
 import se.caiowain.jobseeker.fit.domain.JobPrescreen;
+import se.caiowain.jobseeker.fit.domain.JobTriage;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -86,6 +87,22 @@ public class JobPosting {
     @OneToOne(mappedBy = "jobPosting", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
     private JobPrescreen prescreen;
 
+    /**
+     * Inverse side; adds no column. Lets the job list filter by decision in one join.
+     *
+     * <p>{@code cascade = REMOVE} for the same reason as {@link #prescreen}: a mappedBy
+     * {@code @OneToOne} cannot be a true lazy proxy without bytecode enhancement, so
+     * Hibernate loads it whenever a posting is loaded. Left without cascade, deleting a
+     * posting through the entity graph leaves that loaded row pointing at a posting
+     * Hibernate has just removed, which Hibernate flags as a dangling reference at flush
+     * time. Cascading the remove keeps the ORM's view consistent with the
+     * {@code ON DELETE CASCADE} already on {@code job_triage.job_posting_id} in V7 — this
+     * changes nothing at the SQL level, only teaches the entity graph what the database
+     * already does.
+     */
+    @OneToOne(mappedBy = "jobPosting", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
+    private JobTriage triage;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getFingerprint() { return fingerprint; }
@@ -122,4 +139,5 @@ public class JobPosting {
     public void setLastSeenAt(Instant lastSeenAt) { this.lastSeenAt = lastSeenAt; }
     public List<JobPostingSource> getSources() { return sources; }
     public JobPrescreen getPrescreen() { return prescreen; }
+    public JobTriage getTriage() { return triage; }
 }
