@@ -57,19 +57,36 @@ class FitSchemaMigrationTest extends AbstractIntegrationTest {
     void atMostOnePrescreenRowPerPosting() {
         // Enforced in the database, not assumed: the prescreen truncates and rebuilds for
         // one profile, so two rows for one posting would mean a bug had already happened.
+        // Assert the exact column list: job_posting_id alone, not composite with cv_profile_id.
         Integer count = jdbc.queryForObject("""
-                select count(*) from pg_indexes
-                where tablename = 'job_prescreen' and indexdef like '%UNIQUE%job_posting_id%'
+                select count(*) from (
+                  select string_agg(attname, ',' order by attnum) as col_list
+                  from pg_index
+                  join pg_class tbl on pg_index.indrelid = tbl.oid
+                  join pg_attribute on pg_attribute.attrelid = tbl.oid
+                    and pg_attribute.attnum = any(pg_index.indkey)
+                  where tbl.relname = 'job_prescreen' and pg_index.indisunique = true
+                  group by pg_index.indexrelid
+                ) as idx_cols
+                where col_list = 'job_posting_id'
                 """, Integer.class);
         assertThat(count).isGreaterThan(0);
     }
 
     @Test
     void deepFitIsKeptPerProfileSoSupersededScoresSurviveAsHistory() {
+        // Assert the exact column list: (job_posting_id, cv_profile_id) in that order.
         Integer count = jdbc.queryForObject("""
-                select count(*) from pg_indexes
-                where tablename = 'job_deep_fit'
-                  and indexdef like '%UNIQUE%job_posting_id%cv_profile_id%'
+                select count(*) from (
+                  select string_agg(attname, ',' order by attnum) as col_list
+                  from pg_index
+                  join pg_class tbl on pg_index.indrelid = tbl.oid
+                  join pg_attribute on pg_attribute.attrelid = tbl.oid
+                    and pg_attribute.attnum = any(pg_index.indkey)
+                  where tbl.relname = 'job_deep_fit' and pg_index.indisunique = true
+                  group by pg_index.indexrelid
+                ) as idx_cols
+                where col_list = 'job_posting_id,cv_profile_id'
                 """, Integer.class);
         assertThat(count).isGreaterThan(0);
     }
