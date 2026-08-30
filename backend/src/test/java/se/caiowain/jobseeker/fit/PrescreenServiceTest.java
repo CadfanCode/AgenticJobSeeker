@@ -1,5 +1,6 @@
 package se.caiowain.jobseeker.fit;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +53,20 @@ class PrescreenServiceTest extends AbstractIntegrationTest {
                 documents.save(FitFixtures.document("a".repeat(64))),
                 "Java", "Kubernetes", "Spring Boot", "COBOL");
         profiles.saveAndFlush(profile);
+    }
+
+    /**
+     * {@code job_preferences} is a JVM-wide singleton on a static, shared container, and this
+     * class is not {@code @Transactional} — so whatever {@link #reset()} commits to it would
+     * otherwise leak into every test class that runs afterwards. Put it back the way V7 seeded
+     * it, aside from {@code remotePolicy}, which nothing here changes.
+     */
+    @AfterEach
+    void restorePreferencesSingleton() {
+        JobPreferences prefs = preferences.findSingleton();
+        prefs.getLanguages().clear();
+        prefs.setAcceptableMunicipalities(null);
+        preferences.saveAndFlush(prefs);
     }
 
     private Optional<JobPrescreen> prescreenFor(String fingerprint) {

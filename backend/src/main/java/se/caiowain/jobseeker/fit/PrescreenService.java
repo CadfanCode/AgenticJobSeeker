@@ -101,7 +101,18 @@ public class PrescreenService {
     /**
      * For callers that want the ranking refreshed but must not fail without it — ingest runs
      * long before a CV is ever approved. Returns empty when there is nothing to rank against.
+     *
+     * <p>{@code @Transactional} here, not just on {@link #run()}: {@code this.run()} is a
+     * self-invocation, so it never passes through {@code run()}'s own proxy advice. Without a
+     * transaction on this method too, {@code run()} would execute with none at all — its
+     * {@code deleteAllInBatch()} and {@code saveAll(rows)} would each commit separately, and a
+     * crash between them would leave {@code job_prescreen} truncated rather than rebuilt. With
+     * the transaction opened here, the self-invoked {@code run()} body simply participates in
+     * it. Catching {@link ProfileNotReadyException} inside is still safe: the exception never
+     * crosses a transactional proxy boundary, so it cannot mark this transaction
+     * rollback-only.
      */
+    @Transactional
     public Optional<PrescreenSummary> runQuietly() {
         try {
             return Optional.of(run());
