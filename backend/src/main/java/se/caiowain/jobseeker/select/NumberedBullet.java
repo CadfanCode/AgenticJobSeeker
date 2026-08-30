@@ -1,4 +1,4 @@
-package se.caiowain.jobseeker.tailor.select;
+package se.caiowain.jobseeker.select;
 
 /**
  * A CV bullet as presented to the model.

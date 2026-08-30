@@ -1,4 +1,4 @@
-package se.caiowain.jobseeker.tailor.select;
+package se.caiowain.jobseeker.select;
 
 import java.util.List;
 

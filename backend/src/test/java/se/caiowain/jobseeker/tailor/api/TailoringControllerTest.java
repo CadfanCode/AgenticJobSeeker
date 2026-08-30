@@ -17,9 +17,9 @@ import se.caiowain.jobseeker.profile.repo.CvDocumentRepository;
 import se.caiowain.jobseeker.profile.repo.CvProfileRepository;
 import se.caiowain.jobseeker.repo.JobPostingRepository;
 import se.caiowain.jobseeker.tailor.repo.TailoredApplicationRepository;
-import se.caiowain.jobseeker.tailor.select.OllamaSelectionClient;
-import se.caiowain.jobseeker.tailor.select.SelectionResult;
-import se.caiowain.jobseeker.tailor.select.SelectionResult.RequirementSelection;
+import se.caiowain.jobseeker.select.OllamaSelectionClient;
+import se.caiowain.jobseeker.select.SelectionResult;
+import se.caiowain.jobseeker.select.SelectionResult.RequirementSelection;
 
 import java.time.Instant;
 import java.util.List;

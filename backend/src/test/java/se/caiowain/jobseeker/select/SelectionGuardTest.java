@@ -1,7 +1,7 @@
-package se.caiowain.jobseeker.tailor.select;
+package se.caiowain.jobseeker.select;
 
 import org.junit.jupiter.api.Test;
-import se.caiowain.jobseeker.tailor.select.SelectionResult.RequirementSelection;
+import se.caiowain.jobseeker.select.SelectionResult.RequirementSelection;
 
 import java.util.List;
 

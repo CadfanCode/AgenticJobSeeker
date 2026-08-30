@@ -1,4 +1,4 @@
-package se.caiowain.jobseeker.tailor.select;
+package se.caiowain.jobseeker.select;
 
 import se.caiowain.jobseeker.profile.domain.CvExperience;
 import se.caiowain.jobseeker.profile.domain.CvExperienceBullet;
@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Pure prompt construction. No Spring, no I/O. */
-public class TailoringPromptBuilder {
+public class SelectionPromptBuilder {
 
     private static final String SYSTEM_PROMPT = """
             You match a candidate's CV bullets to a job ad.

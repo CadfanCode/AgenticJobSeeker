@@ -1,10 +1,9 @@
-package se.caiowain.jobseeker.tailor.select;
+package se.caiowain.jobseeker.select;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import se.caiowain.jobseeker.tailor.TailoringUnavailableException;
 
 import java.util.List;
 
@@ -18,12 +17,12 @@ import java.util.List;
 public class OllamaSelectionClient {
 
     private final ChatClient.Builder chatClientBuilder;
-    private final TailoringPromptBuilder prompts;
+    private final SelectionPromptBuilder prompts;
     private final String model;
     private final String baseUrl;
 
     public OllamaSelectionClient(ChatClient.Builder chatClientBuilder,
-                                 TailoringPromptBuilder prompts,
+                                 SelectionPromptBuilder prompts,
                                  @Value("${spring.ai.ollama.chat.options.model:}") String model,
                                  @Value("${spring.ai.ollama.base-url:}") String baseUrl) {
         this.chatClientBuilder = chatClientBuilder;
@@ -42,7 +41,7 @@ public class OllamaSelectionClient {
 
     public SelectionResult select(String jobDescription, List<NumberedBullet> bullets) {
         if (!isAvailable()) {
-            throw new TailoringUnavailableException(
+            throw new ModelUnavailableException(
                     "Tailoring needs a local model. Start Ollama and set "
                             + "spring.ai.ollama.chat.options.model.");
         }
@@ -55,7 +54,7 @@ public class OllamaSelectionClient {
                     .call()
                     .entity(SelectionResult.class);
         } catch (Exception e) {
-            throw new TailoringUnavailableException(
+            throw new ModelUnavailableException(
                     "Could not reach the local model at " + baseUrl + " (" + model + "): "
                             + e.getMessage());
         }

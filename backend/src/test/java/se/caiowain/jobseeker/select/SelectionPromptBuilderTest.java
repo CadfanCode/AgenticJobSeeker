@@ -1,4 +1,4 @@
-package se.caiowain.jobseeker.tailor.select;
+package se.caiowain.jobseeker.select;
 
 import org.junit.jupiter.api.Test;
 import se.caiowain.jobseeker.profile.domain.CvExperience;
@@ -9,9 +9,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class TailoringPromptBuilderTest {
+class SelectionPromptBuilderTest {
 
-    private final TailoringPromptBuilder builder = new TailoringPromptBuilder();
+    private final SelectionPromptBuilder builder = new SelectionPromptBuilder();
 
     private CvProfile profileWithBullets(String... texts) {
         CvProfile profile = new CvProfile();

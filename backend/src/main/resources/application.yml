@@ -41,8 +41,9 @@ jobseeker:
     max-tenant-failures: 5
   profile:
     max-upload-bytes: 10485760
-  tailor:
+  select:
     max-bullets-per-requirement: 3
+  tailor:
     request-timeout-seconds: 300
   sources:
     jobtech:

@@ -9,6 +9,7 @@ import se.caiowain.jobseeker.AbstractIntegrationTest;
 import se.caiowain.jobseeker.domain.AtsVendor;
 import se.caiowain.jobseeker.domain.JobPosting;
 import se.caiowain.jobseeker.domain.JobStatus;
+import se.caiowain.jobseeker.profile.ProfileNotReadyException;
 import se.caiowain.jobseeker.profile.domain.*;
 import se.caiowain.jobseeker.profile.repo.CvDocumentRepository;
 import se.caiowain.jobseeker.profile.repo.CvProfileRepository;
@@ -16,9 +17,10 @@ import se.caiowain.jobseeker.repo.JobPostingRepository;
 import se.caiowain.jobseeker.tailor.domain.ApplicationStatus;
 import se.caiowain.jobseeker.tailor.domain.TailoredApplication;
 import se.caiowain.jobseeker.tailor.repo.TailoredApplicationRepository;
-import se.caiowain.jobseeker.tailor.select.OllamaSelectionClient;
-import se.caiowain.jobseeker.tailor.select.SelectionResult;
-import se.caiowain.jobseeker.tailor.select.SelectionResult.RequirementSelection;
+import se.caiowain.jobseeker.select.OllamaSelectionClient;
+import se.caiowain.jobseeker.select.SelectionRejectedException;
+import se.caiowain.jobseeker.select.SelectionResult;
+import se.caiowain.jobseeker.select.SelectionResult.RequirementSelection;
 
 import java.time.Instant;
 import java.util.List;
@@ -131,7 +133,7 @@ class TailoringServiceTest extends AbstractIntegrationTest {
                 List.of(1))).when(selectionClient).select(anyString(), any());
 
         assertThatThrownBy(() -> service.tailor(jobId))
-                .isInstanceOf(TailoringRejectedException.class);
+                .isInstanceOf(SelectionRejectedException.class);
 
         verify(selectionClient, times(2)).select(anyString(), any());
         assertThat(applications.findFirstByJobPostingIdOrderByIdDesc(jobId).orElseThrow().getStatus())

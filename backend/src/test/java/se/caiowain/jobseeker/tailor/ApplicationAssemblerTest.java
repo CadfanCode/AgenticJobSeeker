@@ -5,10 +5,10 @@ import se.caiowain.jobseeker.domain.JobPosting;
 import se.caiowain.jobseeker.profile.domain.CvProfile;
 import se.caiowain.jobseeker.tailor.domain.ApplicationStatus;
 import se.caiowain.jobseeker.tailor.domain.TailoredApplication;
-import se.caiowain.jobseeker.tailor.select.NumberedBullet;
-import se.caiowain.jobseeker.tailor.select.SelectionGuard;
-import se.caiowain.jobseeker.tailor.select.SelectionResult;
-import se.caiowain.jobseeker.tailor.select.SelectionResult.RequirementSelection;
+import se.caiowain.jobseeker.select.NumberedBullet;
+import se.caiowain.jobseeker.select.SelectionGuard;
+import se.caiowain.jobseeker.select.SelectionResult;
+import se.caiowain.jobseeker.select.SelectionResult.RequirementSelection;
 
 import java.util.List;
 import java.util.Set;

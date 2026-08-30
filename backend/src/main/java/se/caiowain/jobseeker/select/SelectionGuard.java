@@ -1,4 +1,4 @@
-package se.caiowain.jobseeker.tailor.select;
+package se.caiowain.jobseeker.select;
 
 import java.text.Normalizer;
 import java.util.ArrayList;

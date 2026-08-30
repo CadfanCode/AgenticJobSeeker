@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.caiowain.jobseeker.domain.JobPosting;
+import se.caiowain.jobseeker.profile.ProfileNotReadyException;
 import se.caiowain.jobseeker.profile.domain.CvProfile;
 import se.caiowain.jobseeker.profile.domain.ProfileStatus;
 import se.caiowain.jobseeker.profile.repo.CvProfileRepository;
@@ -13,11 +14,12 @@ import se.caiowain.jobseeker.repo.JobPostingRepository;
 import se.caiowain.jobseeker.tailor.domain.ApplicationStatus;
 import se.caiowain.jobseeker.tailor.domain.TailoredApplication;
 import se.caiowain.jobseeker.tailor.repo.TailoredApplicationRepository;
-import se.caiowain.jobseeker.tailor.select.NumberedBullet;
-import se.caiowain.jobseeker.tailor.select.OllamaSelectionClient;
-import se.caiowain.jobseeker.tailor.select.SelectionGuard;
-import se.caiowain.jobseeker.tailor.select.SelectionResult;
-import se.caiowain.jobseeker.tailor.select.TailoringPromptBuilder;
+import se.caiowain.jobseeker.select.NumberedBullet;
+import se.caiowain.jobseeker.select.OllamaSelectionClient;
+import se.caiowain.jobseeker.select.SelectionGuard;
+import se.caiowain.jobseeker.select.SelectionRejectedException;
+import se.caiowain.jobseeker.select.SelectionResult;
+import se.caiowain.jobseeker.select.SelectionPromptBuilder;
 
 import java.time.Instant;
 import java.util.List;
@@ -32,7 +34,7 @@ public class TailoringService {
     private final JobPostingRepository jobs;
     private final CvProfileRepository profiles;
     private final OllamaSelectionClient selectionClient;
-    private final TailoringPromptBuilder prompts;
+    private final SelectionPromptBuilder prompts;
     private final SelectionGuard guard;
     private final ApplicationAssembler assembler;
     private final int maxBulletsPerRequirement;
@@ -41,10 +43,10 @@ public class TailoringService {
                             JobPostingRepository jobs,
                             CvProfileRepository profiles,
                             OllamaSelectionClient selectionClient,
-                            TailoringPromptBuilder prompts,
+                            SelectionPromptBuilder prompts,
                             SelectionGuard guard,
                             ApplicationAssembler assembler,
-                            @Value("${jobseeker.tailor.max-bullets-per-requirement:3}") int maxBulletsPerRequirement) {
+                            @Value("${jobseeker.select.max-bullets-per-requirement:3}") int maxBulletsPerRequirement) {
         this.applications = applications;
         this.jobs = jobs;
         this.profiles = profiles;
@@ -60,7 +62,7 @@ public class TailoringService {
      * record and then throws. Under the default rollback-on-RuntimeException rule that
      * save would be discarded, and the failure would vanish instead of being debuggable.
      */
-    @Transactional(noRollbackFor = TailoringRejectedException.class)
+    @Transactional(noRollbackFor = SelectionRejectedException.class)
     public TailoredApplication tailor(Long jobId) {
         JobPosting job = jobs.findById(jobId)
                 .orElseThrow(() -> new IllegalArgumentException("No job with id " + jobId));
@@ -118,7 +120,7 @@ public class TailoringService {
         applications.save(failed);
         applications.flush();
 
-        throw new TailoringRejectedException(
+        throw new SelectionRejectedException(
                 "The model's selection failed validation twice.", lastVerdict.violations());
     }
 

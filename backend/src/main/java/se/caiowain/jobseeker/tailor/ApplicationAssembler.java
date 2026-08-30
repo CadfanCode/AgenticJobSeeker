@@ -6,9 +6,10 @@ import se.caiowain.jobseeker.tailor.domain.ApplicationEvidence;
 import se.caiowain.jobseeker.tailor.domain.ApplicationRequirement;
 import se.caiowain.jobseeker.tailor.domain.ApplicationStatus;
 import se.caiowain.jobseeker.tailor.domain.TailoredApplication;
-import se.caiowain.jobseeker.tailor.select.NumberedBullet;
-import se.caiowain.jobseeker.tailor.select.SelectionGuard;
-import se.caiowain.jobseeker.tailor.select.SelectionResult;
+import se.caiowain.jobseeker.select.Coverage;
+import se.caiowain.jobseeker.select.NumberedBullet;
+import se.caiowain.jobseeker.select.SelectionGuard;
+import se.caiowain.jobseeker.select.SelectionResult;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -77,8 +78,7 @@ public class ApplicationAssembler {
             }
         }
 
-        application.setCoveragePercent(
-                selections.isEmpty() ? 0 : Math.round(withEvidence * 100f / selections.size()));
+        application.setCoveragePercent(Coverage.percent(withEvidence, selections.size()));
         return application;
     }
 }
