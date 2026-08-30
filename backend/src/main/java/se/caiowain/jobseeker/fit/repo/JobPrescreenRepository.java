@@ -7,4 +7,7 @@ import java.util.Optional;
 
 public interface JobPrescreenRepository extends JpaRepository<JobPrescreen, Long> {
     Optional<JobPrescreen> findByJobPostingId(Long jobPostingId);
+
+    java.util.List<se.caiowain.jobseeker.fit.domain.JobPrescreen>
+            findByJobPostingIdIn(java.util.Collection<Long> jobPostingIds);
 }
