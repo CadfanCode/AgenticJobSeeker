@@ -14,6 +14,8 @@ import se.caiowain.jobseeker.domain.JobPosting;
 import se.caiowain.jobseeker.domain.JobPostingSource;
 import se.caiowain.jobseeker.domain.SourceId;
 import se.caiowain.jobseeker.fit.domain.GateVerdict;
+import se.caiowain.jobseeker.fit.domain.JobPrescreen;
+import se.caiowain.jobseeker.fit.domain.JobTriage;
 import se.caiowain.jobseeker.fit.domain.TriageState;
 import se.caiowain.jobseeker.repo.JobPostingRepository;
 
@@ -44,10 +46,18 @@ public class JobQueryService {
         Specification<JobPosting> spec = (root, criteriaQuery, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            // Ad-hoc entity joins (JPA 3.2) rather than mapped associations. JobPosting
+            // deliberately has no inverse @OneToOne to these tables: a mappedBy @OneToOne
+            // cannot be a true lazy proxy without bytecode enhancement, so mapping them made
+            // Hibernate resolve both on every JobPosting load anywhere in the application —
+            // measured at ~1,200 extra queries per prescreen run over ~600 postings.
+            //
             // LEFT, always: a posting ingested since the last prescreen has no fit row and
             // must still be listed. An inner join here would silently hide new jobs.
-            Join<Object, Object> fit = root.join("prescreen", JoinType.LEFT);
-            Join<Object, Object> decision = root.join("triage", JoinType.LEFT);
+            Join<JobPosting, JobPrescreen> fit = root.join(JobPrescreen.class, JoinType.LEFT);
+            fit.on(cb.equal(fit.get("jobPosting"), root));
+            Join<JobPosting, JobTriage> decision = root.join(JobTriage.class, JoinType.LEFT);
+            decision.on(cb.equal(decision.get("jobPosting"), root));
 
             if (query != null && !query.isBlank()) {
                 String pattern = "%" + query.toLowerCase() + "%";
