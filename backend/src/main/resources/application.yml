@@ -61,3 +61,13 @@ spring.ai.ollama:
       temperature: 0.2
       num-ctx: 8192
       num-predict: 600
+
+# The model is a local process on this machine: if it is not listening, it is not
+# starting in the next twenty minutes either. Spring AI defaults to 10 attempts with a
+# 2s initial backoff and a x5 multiplier capped at 3 minutes, so a refused connection
+# to localhost retried for ~20 minutes behind a spinner promising one to two. One
+# attempt turns that into an immediate 503, which is what the API contract says
+# happens when Ollama is unreachable. Guard rejections are retried separately, in
+# TailoringService and DeepFitService, and are unaffected by this.
+spring.ai.retry:
+  max-attempts: 1
