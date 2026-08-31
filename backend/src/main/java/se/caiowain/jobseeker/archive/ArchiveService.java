@@ -80,9 +80,17 @@ public class ArchiveService {
         CvProfile profile = application.getCvProfile();
         JobPosting job = application.getJobPosting();
 
-        PdfRenderer.RenderedDocuments rendered = renderer.renderAll(List.of(
-                html.cvHtml(document.cv(application, profile)),
-                html.letterHtml(document.letter(application, profile, today()))));
+        // Self-invocation, deliberately: this calls the same cvHtml/letterHtml the preview
+        // endpoint calls, so there is exactly one implementation of the document, not two
+        // expressions that happen to agree today. Spring's proxy does not apply
+        // cvHtml/letterHtml's own @Transactional(readOnly = true) to a same-class call, but
+        // that is harmless here — approve() is already inside its own read-write
+        // transaction, so the call simply runs in it. require(applicationId) therefore runs
+        // three times per approval rather than once; a session-scoped id lookup, not worth
+        // optimising away by re-duplicating the HTML composition.
+        String cvHtml = cvHtml(applicationId);
+        String letterHtml = letterHtml(applicationId);
+        PdfRenderer.RenderedDocuments rendered = renderer.renderAll(List.of(cvHtml, letterHtml));
         byte[] cvPdf = rendered.pdfs().get(0);
         byte[] letterPdf = rendered.pdfs().get(1);
 

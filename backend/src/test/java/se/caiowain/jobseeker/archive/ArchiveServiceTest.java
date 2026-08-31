@@ -2,6 +2,7 @@ package se.caiowain.jobseeker.archive;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -27,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 
 /**
  * The renderer is mocked so the archive's own logic is testable without a browser — the same
@@ -206,15 +208,36 @@ class ArchiveServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void thePreviewAndTheApprovedDocumentComeFromTheSameHtml() {
-        // The no-drift guarantee, asserted rather than asserted-about: approve() renders by
-        // calling these same two methods.
+    void cvHtmlAndLetterHtmlProduceRealContent() {
         String cvHtml = archiveService.cvHtml(applicationId);
         String letterHtml = archiveService.letterHtml(applicationId);
 
         assertThat(cvHtml).contains("Built REST APIs in Java").contains("Cai Wain");
         assertThat(letterHtml).contains("Jag söker tjänsten.");
         assertThat(archiveService.cvHtml(applicationId)).isEqualTo(cvHtml);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void thePreviewAndTheApprovedDocumentComeFromTheSameHtml() {
+        // A forward drift-guard, not a retroactive one: self-invocation is invisible to both
+        // @Transactional and a Mockito spy (verified empirically — a spy on this bean would
+        // not see approve()'s internal this.cvHtml(...) call either), and with today's fixed
+        // input an inlined duplicate of the same logic necessarily produces identical output.
+        // No black-box assertion can prove approve() calls cvHtml()/letterHtml() rather than
+        // a byte-for-byte copy of their bodies; that has to be read from the source. What
+        // this test *does* catch is the next drift: capture what approve() actually handed
+        // the renderer, and compare it against a fresh cvHtml()/letterHtml() call afterwards
+        // — if a future edit changes cvHtml()/letterHtml() without updating a re-inlined copy
+        // in approve(), the captured (stale) HTML stops matching and this fails.
+        ArgumentCaptor<List<String>> captor = ArgumentCaptor.forClass(List.class);
+
+        archiveService.approve(applicationId);
+
+        verify(renderer).renderAll(captor.capture());
+        // cvHtml/letterHtml carry no status guard, so they still work after approval.
+        assertThat(captor.getValue().get(0)).isEqualTo(archiveService.cvHtml(applicationId));
+        assertThat(captor.getValue().get(1)).isEqualTo(archiveService.letterHtml(applicationId));
     }
 
     @Test
