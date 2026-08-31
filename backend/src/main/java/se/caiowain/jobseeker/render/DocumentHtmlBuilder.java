@@ -17,6 +17,21 @@ public class DocumentHtmlBuilder {
 
     private static final String FONT_STACK = "Georgia, 'Times New Roman', Times, serif";
 
+    /**
+     * The printed margin, shared with {@link PdfRenderer} so the PDF and this CSS never
+     * disagree. Verified empirically against this project's pinned Chromium: headless PDF
+     * export honours {@code @page margin} directly, and when {@link PdfRenderer} also passes
+     * the identical values through {@code Page.PdfOptions.setMargin}, the two do not stack —
+     * whichever one Chromium actually applies, the result is the same margin, so correctness
+     * does not depend on which mechanism a future Chromium build prefers.
+     *
+     * <p>{@code @page} is a print-only at-rule that browsers ignore on screen, so it does
+     * nothing for the preview iframe. The {@code @media screen} rule below gives the preview
+     * an equivalent padding so approving something resembles what prints.
+     */
+    static final String MARGIN_VERTICAL = "18mm";
+    static final String MARGIN_HORIZONTAL = "16mm";
+
     public String cvHtml(CvContent cv) {
         StringBuilder body = new StringBuilder();
 
@@ -139,10 +154,11 @@ public class DocumentHtmlBuilder {
                 <meta charset="utf-8">
                 <title>%s</title>
                 <style>
-                @page { size: A4; margin: 18mm 16mm; }
+                @page { size: A4; margin: %s %s; }
                 * { box-sizing: border-box; }
                 body { font-family: %s; font-size: 10.5pt; line-height: 1.45;
                        color: #111; margin: 0; }
+                @media screen { body { padding: %s %s; } }
                 h1 { font-size: 20pt; margin: 0 0 2mm; letter-spacing: 0.2px; }
                 h2 { font-size: 9pt; text-transform: uppercase; letter-spacing: 1.2px;
                      color: #555; border-bottom: 0.4pt solid #bbb;
@@ -163,6 +179,7 @@ public class DocumentHtmlBuilder {
                 %s
                 </body>
                 </html>
-                """.formatted(escape(title), FONT_STACK, body);
+                """.formatted(escape(title), MARGIN_VERTICAL, MARGIN_HORIZONTAL, FONT_STACK,
+                MARGIN_VERTICAL, MARGIN_HORIZONTAL, body);
     }
 }
