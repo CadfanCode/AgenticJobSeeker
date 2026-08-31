@@ -51,6 +51,7 @@ export function JobList() {
         <Link to="/profile" className="text-slate-600 hover:underline">My CV profile</Link>
         <Link to="/applications" className="text-slate-600 hover:underline">Applications</Link>
         <Link to="/preferences" className="text-slate-600 hover:underline">Preferences</Link>
+        <Link to="/archive" className="text-slate-600 hover:underline">Archive</Link>
       </nav>
       <StatsHeader onIngested={load} />
 
