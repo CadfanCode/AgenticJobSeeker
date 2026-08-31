@@ -102,6 +102,10 @@ Slice 2b — extractive tailoring:
 - Spec: `docs/superpowers/specs/2026-08-28-extractive-tailoring-design.md`
 - Plan: `docs/superpowers/plans/2026-08-28-extractive-tailoring.md`
 
+Slice 2c — faithful preview and immutable archive:
+- Spec: `docs/superpowers/specs/2026-08-31-faithful-preview-and-archive-design.md`
+- Plan: `docs/superpowers/plans/2026-08-31-faithful-preview-and-archive.md`
+
 ## CV profile
 
 Slice 2a ingests your CV so Slice 2b can tailor from it. Upload a PDF at
@@ -157,7 +161,7 @@ Generation takes 45–90 seconds on CPU.
 | `GET` | `/api/jobs/{id}/application` | The application for a job |
 | `GET` | `/api/applications` | The queue |
 | `PUT` | `/api/applications/{id}/letter` | Save your prose |
-| `POST` | `/api/applications/{id}/approve` | Mark reviewed |
+| `POST` | `/api/applications/{id}/approve` | Render, archive and mark reviewed — see below |
 | `DELETE` | `/api/applications/{id}` | Discard |
 
 ### What it deliberately does not do
@@ -174,7 +178,42 @@ every word is yours — but a high coverage percentage means "the model found so
 point at", not "you are a strong match". The requirement-by-requirement view below the bar
 is the honest read.
 
+## Preview and archive
+
+Open a tailored application and its **Preview** panel shows the CV and cover letter exactly as
+Chromium will print them — the preview endpoint and the approve path render the same HTML, so
+what you approve is what gets archived, not a description of it that could quietly drift.
+
+Approving renders both documents, hashes each file (SHA-256), and freezes the result into
+`/archive` — an immutable record you can still open months later during an interview, even
+after the application it came from has been discarded or re-tailored, and even after the job
+ad itself has been rewritten or removed. `apply_url` is kept in the archive for your own
+reference only; nothing in the codebase reads, follows or submits it.
+
+Rendering runs on **headless Chromium via Playwright** — local, free, no API key, and a
+**developer prerequisite, exactly like Ollama**: install it once, outside the build.
+
+```bash
+cd backend
+export JAVA_HOME=/usr/lib/jvm/default
+./mvnw exec:java -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.args="install chromium"
+```
+
+With no browser installed the application still starts and every earlier slice works normally;
+preview and approve return `503` naming the command above. `./mvnw test` never triggers a
+browser download itself — Playwright's own install step is network access, which the suite
+forbids, so browser-dependent tests skip cleanly instead.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/applications/{id}/preview/cv` | The CV as HTML, exactly what will be printed |
+| `GET` | `/api/applications/{id}/preview/letter` | The cover letter as HTML |
+| `POST` | `/api/applications/{id}/approve` | Render, hash, archive, and freeze (extended) |
+| `GET` | `/api/archive` | Approved applications, newest first, paged |
+| `GET` | `/api/archive/{id}` | Metadata, the ad as it read that day, and the letter text |
+| `GET` | `/api/archive/{id}/cv.pdf` | The frozen CV bytes |
+| `GET` | `/api/archive/{id}/letter.pdf` | The frozen letter bytes |
+
 ## Not in this slice
 
-PDF rendering of the tailored application (Slice 2c); Playwright application submission
-(Slice 3); metrics and settings (Slice 4).
+Playwright application submission (Slice 3); metrics and settings (Slice 4).

@@ -5,12 +5,13 @@ import type { ArchiveSummary } from '../archiveTypes'
 import type { Page } from '../types'
 
 export function ArchivePage() {
+  const [page, setPage] = useState(0)
   const [data, setData] = useState<Page<ArchiveSummary> | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchArchive().then(setData).catch((e: Error) => setError(e.message))
-  }, [])
+    fetchArchive(page).then(setData).catch((e: Error) => setError(e.message))
+  }, [page])
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
@@ -36,7 +37,13 @@ export function ArchivePage() {
         </p>
       )}
 
-      <ul className="mt-6 divide-y divide-slate-200">
+      {data && data.totalElements > 0 && (
+        <p className="mt-4 text-sm text-slate-500">
+          {data.totalElements} archived{data.totalPages > 1 ? ` · page ${data.page + 1} of ${data.totalPages}` : ''}
+        </p>
+      )}
+
+      <ul className="mt-2 divide-y divide-slate-200">
         {data?.content.map((entry) => (
           <li key={entry.id} className="py-4">
             <Link to={`/archive/${entry.id}`} className="text-base font-medium text-slate-900 hover:underline">
@@ -49,6 +56,28 @@ export function ArchivePage() {
           </li>
         ))}
       </ul>
+
+      {data && data.totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between text-sm">
+          <button
+            disabled={data.page === 0}
+            onClick={() => setPage(data.page - 1)}
+            className="rounded-md border border-slate-300 px-3 py-1.5 disabled:opacity-40"
+          >
+            Previous
+          </button>
+          <span className="text-slate-600">
+            Page {data.page + 1} of {data.totalPages}
+          </span>
+          <button
+            disabled={data.page + 1 >= data.totalPages}
+            onClick={() => setPage(data.page + 1)}
+            className="rounded-md border border-slate-300 px-3 py-1.5 disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   )
 }

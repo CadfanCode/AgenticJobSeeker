@@ -16,6 +16,10 @@ import se.caiowain.jobseeker.profile.repo.CvProfileRepository;
 import se.caiowain.jobseeker.render.PdfRenderer;
 import se.caiowain.jobseeker.render.RendererUnavailableException;
 import se.caiowain.jobseeker.repo.JobPostingRepository;
+import se.caiowain.jobseeker.select.OllamaSelectionClient;
+import se.caiowain.jobseeker.select.SelectionResult;
+import se.caiowain.jobseeker.select.SelectionResult.RequirementSelection;
+import se.caiowain.jobseeker.tailor.TailoringService;
 import se.caiowain.jobseeker.tailor.domain.*;
 import se.caiowain.jobseeker.tailor.repo.TailoredApplicationRepository;
 
@@ -26,9 +30,11 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * The renderer is mocked so the archive's own logic is testable without a browser — the same
@@ -52,9 +58,13 @@ class ArchiveServiceTest extends AbstractIntegrationTest {
     @Autowired JobPostingRepository jobs;
     @Autowired CvProfileRepository profiles;
     @Autowired CvDocumentRepository documents;
+    @Autowired TailoringService tailoringService;
 
     @MockitoBean PdfRenderer renderer;
+    /** Only needed by the re-tailor path exercised in §10.8's test; no test reaches the network. */
+    @MockitoBean OllamaSelectionClient selectionClient;
 
+    private Long jobId;
     private Long applicationId;
 
     @BeforeEach
@@ -98,7 +108,7 @@ class ArchiveServiceTest extends AbstractIntegrationTest {
         job.setApplyUrl("https://example.test/apply/arch-1");
         job.setFirstSeenAt(Instant.parse("2026-08-30T08:00:00Z"));
         job.setLastSeenAt(Instant.parse("2026-08-30T08:00:00Z"));
-        jobs.save(job);
+        jobId = jobs.save(job).getId();
 
         TailoredApplication application = new TailoredApplication();
         application.setJobPosting(job);
@@ -119,6 +129,14 @@ class ArchiveServiceTest extends AbstractIntegrationTest {
 
         doReturn(new PdfRenderer.RenderedDocuments(List.of(CV_BYTES, LETTER_BYTES), "chromium/mocked"))
                 .when(renderer).renderAll(any());
+
+        // Only exercised by the re-tailor test below; stubbed here so it mirrors the seeded
+        // application's own requirement/evidence and TailoringService's real guard accepts it.
+        when(selectionClient.isAvailable()).thenReturn(true);
+        when(selectionClient.modelName()).thenReturn("qwen2.5:7b-instruct");
+        doReturn(new SelectionResult(List.of(
+                new RequirementSelection("erfarenhet av Java", List.of(1))), List.of(1)))
+                .when(selectionClient).select(anyString(), any());
     }
 
     @Test
@@ -244,5 +262,52 @@ class ArchiveServiceTest extends AbstractIntegrationTest {
     void anUnknownApplicationIsRejected() {
         assertThatThrownBy(() -> archiveService.approve(999_999L))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void theArchivedAdSurvivesAnIngestRewritingThePosting() {
+        // Success criterion §10.6: JobMergeService overwrites job_posting.description on every
+        // ingest run, keeping the richest text it has seen so far. The archive holds its own
+        // copy precisely so a later reader still sees the ad as it read the day it was answered.
+        ApplicationArchive archive = archiveService.approve(applicationId);
+        String frozenDescription = archive.getJobDescriptionText();
+        assertThat(frozenDescription).contains("erfarenhet av Java");
+
+        JobPosting job = jobs.findById(jobId).orElseThrow();
+        job.setDescription("something completely different");
+        jobs.saveAndFlush(job);
+
+        ApplicationArchive reloaded = archives.findById(archive.getId()).orElseThrow();
+        assertThat(reloaded.getJobDescriptionText()).isEqualTo(frozenDescription);
+        assertThat(reloaded.getJobDescriptionText())
+                .doesNotContain("something completely different");
+    }
+
+    @Test
+    void aSecondApprovalForTheSameJobAddsASecondArchiveRow() {
+        // Success criterion §10.8, crossed via the real path rather than two direct calls to
+        // archiveService.approve() on hand-built rows: approve, discard, re-tailor (which
+        // TailoringService.tailor() implements by deleting the original tailored_application
+        // and inserting a fresh DRAFT — precisely why the first archive's FK is nullable),
+        // then approve again. No unique constraint on tailored_application_id backs this.
+        ApplicationArchive first = archiveService.approve(applicationId);
+
+        tailoringService.discard(applicationId);
+        TailoredApplication retailored = tailoringService.tailor(jobId);
+        assertThat(retailored.getId()).isNotEqualTo(applicationId);
+        assertThat(applications.findById(applicationId)).isEmpty();
+
+        ApplicationArchive second = archiveService.approve(retailored.getId());
+
+        assertThat(archives.count()).isEqualTo(2);
+        assertThat(second.getId()).isNotEqualTo(first.getId());
+
+        ApplicationArchive firstReloaded = archives.findById(first.getId()).orElseThrow();
+        assertThat(firstReloaded.getTailoredApplication()).isNull();
+        assertThat(firstReloaded.getJobTitle()).isEqualTo("Plattformsingenjör");
+        assertThat(firstReloaded.getCvPdf()).isNotEmpty();
+
+        ApplicationArchive secondReloaded = archives.findById(second.getId()).orElseThrow();
+        assertThat(secondReloaded.getCvPdf()).isNotEmpty();
     }
 }

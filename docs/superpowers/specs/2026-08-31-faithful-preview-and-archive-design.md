@@ -122,7 +122,12 @@ is the whole guarantee; anything that duplicates it reintroduces drift.
 - **`ApplicationDocument`** — pure. `TailoredApplication` + `CvProfile` → a document model:
   header, experiences, the bullets 2b selected in the order it ranked them, the letter body.
 - **`DocumentHtmlBuilder`** — pure. Document model → one HTML string per document. No Spring,
-  no I/O. The highest-value unit tests in the slice live here.
+  no I/O. The highest-value unit tests in the slice live here. The CV's sections, in the order
+  they render: header (name, headline, contact), profile summary, skills, experience (each
+  role's dates, location and bullets), education (institution, degree, field and dates —
+  placed after experience, the Swedish convention). The letter's sections: header, date and
+  recipient, body, sign-off. A future reviewer should check the rendered document against this
+  list rather than against the previous reviewer's memory of what it contained.
 - **`PdfRenderer`** — the only component that drives a browser. HTML → PDF bytes.
 - **`ArchiveService`** — orchestration: render, hash, persist, flip status.
 

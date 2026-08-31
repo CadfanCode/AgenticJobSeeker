@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * HTML to PDF through headless Chromium. The only component in the project that drives a
@@ -26,6 +27,21 @@ import java.util.List;
  */
 @Component
 public class PdfRenderer {
+
+    /**
+     * With no options, {@code Playwright.create()} runs {@code cli.js install} for every
+     * engine it bundles — Chromium, Firefox <b>and</b> WebKit — unless
+     * {@code PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD} is set, which is a multi-hundred-megabyte
+     * network fetch the project's "nothing leaves the machine" promise and the test suite's
+     * "no network access" rule both forbid. {@code installBrowsers} reads this env map before
+     * falling back to {@code System.getenv}, so passing it here works without touching the
+     * developer's shell. Skipping the *install* does not affect *launching* an
+     * already-installed browser — Chromium remains a developer prerequisite, installed once,
+     * outside the build. A future Playwright upgrade could silently restore the vendor
+     * default, which is exactly why this is named rather than left implicit.
+     */
+    private static final Playwright.CreateOptions OFFLINE = new Playwright.CreateOptions()
+            .setEnv(Map.of("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1"));
 
     /** One browser launch, several PDFs, and the version string captured from that same session. */
     public record RenderedDocuments(List<byte[]> pdfs, String rendererName) {
@@ -59,7 +75,7 @@ public class PdfRenderer {
      * a health check.
      */
     public boolean isAvailable() {
-        try (Playwright playwright = Playwright.create();
+        try (Playwright playwright = Playwright.create(OFFLINE);
              Browser browser = playwright.chromium().launch()) {
             return browser.isConnected();
         } catch (Exception e) {
@@ -69,7 +85,7 @@ public class PdfRenderer {
 
     /** Recorded on every archive row, so a future reader knows what produced the file. */
     public String rendererName() {
-        try (Playwright playwright = Playwright.create();
+        try (Playwright playwright = Playwright.create(OFFLINE);
              Browser browser = playwright.chromium().launch()) {
             return "chromium/" + browser.version();
         } catch (Exception e) {
@@ -102,7 +118,7 @@ public class PdfRenderer {
 
     private static Playwright createPlaywright() {
         try {
-            return Playwright.create();
+            return Playwright.create(OFFLINE);
         } catch (Exception e) {
             throw noBrowser(e);
         }

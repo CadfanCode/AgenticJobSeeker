@@ -1,5 +1,6 @@
 package se.caiowain.jobseeker.render;
 
+import se.caiowain.jobseeker.profile.domain.CvEducation;
 import se.caiowain.jobseeker.profile.domain.CvExperience;
 import se.caiowain.jobseeker.profile.domain.CvExperienceBullet;
 import se.caiowain.jobseeker.profile.domain.CvProfile;
@@ -39,15 +40,21 @@ public class ApplicationDocument {
 
             experiences.add(new CvContent.Experience(
                     experience.getEmployer(), experience.getTitle(),
-                    experience.getStartDate(), experience.getEndDate(),
+                    experience.getStartDate(), experience.getEndDate(), experience.isCurrent(),
                     experience.getLocation(), List.copyOf(first)));
         }
 
         List<String> skills = profile.getSkills().stream().map(CvSkill::getName).toList();
 
+        List<CvContent.Education> education = new ArrayList<>();
+        for (CvEducation entry : profile.getEducation()) {
+            education.add(new CvContent.Education(entry.getInstitution(), entry.getDegree(),
+                    entry.getFieldOfStudy(), entry.getStartDate(), entry.getEndDate()));
+        }
+
         return new CvContent(profile.getFullName(), profile.getHeadline(), profile.getEmail(),
                 profile.getPhone(), profile.getLocation(), profile.getSummary(),
-                skills, List.copyOf(experiences));
+                skills, List.copyOf(experiences), List.copyOf(education));
     }
 
     public LetterContent letter(TailoredApplication application, CvProfile profile, LocalDate date) {

@@ -16,7 +16,8 @@ class DocumentHtmlBuilderTest {
                 "+46 70 000 00 00", "Stockholm, Sweden", "Backend engineer.",
                 List.of("Java", "Spring Boot"),
                 List.of(new CvContent.Experience("Acme AB", "Backend Developer",
-                        "2022", "2026", "Stockholm", List.of(bullets))));
+                        "2022", "2026", false, "Stockholm", List.of(bullets))),
+                List.of());
     }
 
     @Test
@@ -69,6 +70,49 @@ class DocumentHtmlBuilderTest {
 
         assertThat(html.indexOf("First one")).isLessThan(html.indexOf("Second one"));
         assertThat(html.indexOf("Second one")).isLessThan(html.indexOf("Third one"));
+    }
+
+    @Test
+    void rendersEducationAfterExperience() {
+        CvContent cv = new CvContent("Cai Wain", "Senior Software Engineer", "cai@example.com",
+                null, "Stockholm, Sweden", null, List.of(),
+                List.of(new CvContent.Experience("Acme AB", "Backend Developer",
+                        "2022", "2026", false, "Stockholm", List.of("Built REST APIs"))),
+                List.of(new CvContent.Education("KTH Royal Institute of Technology",
+                        "MSc Computer Science", "Distributed Systems", "2016", "2020")));
+
+        String html = builder.cvHtml(cv);
+
+        assertThat(html).contains("Education");
+        assertThat(html).contains("KTH Royal Institute of Technology");
+        assertThat(html).contains("MSc Computer Science");
+        assertThat(html).contains("Distributed Systems");
+        // The Swedish convention: Education follows Experience, not the other way round.
+        assertThat(html.indexOf("Experience")).isLessThan(html.indexOf("Education"));
+        assertThat(html.indexOf("Built REST APIs")).isLessThan(html.indexOf("KTH Royal"));
+    }
+
+    @Test
+    void omitsTheEducationSectionWhenThereIsNone() {
+        String html = builder.cvHtml(cv("Built REST APIs"));
+
+        assertThat(html).doesNotContain("<h2>Education</h2>");
+    }
+
+    @Test
+    void aCurrentRoleRendersPresentRatherThanADanglingDash() {
+        // No location either, so a bare "dates" bug (end date blank, nothing else to join
+        // against) would render "2022 – </p>" rather than being masked by a trailing field.
+        CvContent cv = new CvContent("Cai Wain", "Senior Software Engineer", "cai@example.com",
+                null, "Stockholm, Sweden", null, List.of(),
+                List.of(new CvContent.Experience("Acme AB", "Backend Developer",
+                        "2022", null, true, null, List.of("Built REST APIs"))),
+                List.of());
+
+        String html = builder.cvHtml(cv);
+
+        assertThat(html).contains("2022 – Present</p>");
+        assertThat(html).doesNotContain("2022 – </p>");
     }
 
     @Test

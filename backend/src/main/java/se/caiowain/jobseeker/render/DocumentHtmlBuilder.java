@@ -73,6 +73,18 @@ public class DocumentHtmlBuilder {
         }
         body.append("</section>");
 
+        if (!cv.education().isEmpty()) {
+            // Placed after Experience — the Swedish CV convention, and spec §3.2 now names it.
+            body.append("<section><h2>Education</h2>");
+            for (CvContent.Education entry : cv.education()) {
+                body.append("<article><h3>").append(educationHeader(entry)).append("</h3>")
+                        .append("<p class=\"dates\">")
+                        .append(joinEscaped(entry.fieldOfStudy(), educationDates(entry)))
+                        .append("</p></article>");
+            }
+            body.append("</section>");
+        }
+
         return page("CV — " + safe(cv.fullName()), body.toString());
     }
 
@@ -112,11 +124,31 @@ public class DocumentHtmlBuilder {
         return out.toString();
     }
 
+    /**
+     * A current role has a blank end date — {@code experience.current()} is the source of
+     * truth for that, not the presence of text, so an ongoing role renders "Present" rather
+     * than a dash with nothing after it.
+     */
     private static String dates(CvContent.Experience experience) {
-        if (!notBlank(experience.startDate()) && !notBlank(experience.endDate())) {
+        String end = experience.current() ? "Present" : safe(experience.endDate());
+        if (!notBlank(experience.startDate()) && !notBlank(end)) {
             return null;
         }
-        return safe(experience.startDate()) + " – " + safe(experience.endDate());
+        return safe(experience.startDate()) + " – " + end;
+    }
+
+    private static String educationHeader(CvContent.Education entry) {
+        if (notBlank(entry.degree()) && notBlank(entry.institution())) {
+            return escape(entry.degree()) + " &mdash; " + escape(entry.institution());
+        }
+        return escape(entry.degree()) + escape(entry.institution());
+    }
+
+    private static String educationDates(CvContent.Education entry) {
+        if (!notBlank(entry.startDate()) && !notBlank(entry.endDate())) {
+            return null;
+        }
+        return safe(entry.startDate()) + " – " + safe(entry.endDate());
     }
 
     private static String joinEscaped(String... parts) {

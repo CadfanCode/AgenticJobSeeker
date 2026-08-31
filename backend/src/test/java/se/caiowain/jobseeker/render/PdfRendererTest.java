@@ -35,7 +35,8 @@ class PdfRendererTest {
         return new CvContent("Cai Wain", "Senior Software Engineer", "cai@example.com",
                 null, "Stockholm, Sweden", null, List.of("Java"),
                 List.of(new CvContent.Experience("Acme AB", "Backend Developer",
-                        "2022", "2026", "Stockholm", List.of(bullets))));
+                        "2022", "2026", false, "Stockholm", List.of(bullets))),
+                List.of());
     }
 
     private String textOf(byte[] pdf) throws Exception {
@@ -54,11 +55,11 @@ class PdfRendererTest {
                         + job + "." + b);
             }
             experiences.add(new CvContent.Experience("Employer " + job, "Role " + job,
-                    "20" + job, "20" + (job + 1), "Stockholm", bullets));
+                    "20" + job, "20" + (job + 1), false, "Stockholm", bullets));
         }
         return new CvContent("Cai Wain", "Senior Software Engineer", "cai@example.com",
                 null, "Stockholm, Sweden", null, List.of("Java", "Spring", "PostgreSQL"),
-                List.copyOf(experiences));
+                List.copyOf(experiences), List.of());
     }
 
     /** The smallest X and Y among the text on one page — how close the nearest text gets to the edge. */
@@ -127,14 +128,23 @@ class PdfRendererTest {
             float[] page1 = minInset(document, 1);
             float[] page2 = minInset(document, 2);
 
-            // A generous lower bound, not typesetting precision: the intended margin is 16mm
-            // (~45pt) horizontally and 18mm (~51pt) vertically, so 20pt rules out "flush to
-            // the physical edge" (0pt) — the defect this test exists to catch — with plenty of
-            // room for font metrics and layout to vary without making the test flaky.
-            assertThat(page1[0]).as("page 1 left inset (pt)").isGreaterThan(20f);
-            assertThat(page1[1]).as("page 1 top inset (pt)").isGreaterThan(20f);
-            assertThat(page2[0]).as("page 2 left inset (pt)").isGreaterThan(20f);
-            assertThat(page2[1]).as("page 2 top inset (pt)").isGreaterThan(20f);
+            // A band, not typesetting precision, but narrow enough to actually back the class
+            // comment's claim that the CSS @page margin and the explicit Page.PdfOptions
+            // margin do not stack — a plain lower bound of 20f passed whether they stacked or
+            // not and verified nothing about that claim. Measured empirically on this
+            // project's pinned Chromium under today's single-margin code path: left inset
+            // 45.75pt (~16mm, matching MARGIN_HORIZONTAL) on both pages; top inset 73.5pt on
+            // page 1 (the ~22pt above the 51pt/18mm MARGIN_VERTICAL comes from the h1
+            // heading's own line-height) and 63.75pt on page 2. If the two margins stacked,
+            // the horizontal inset — nothing else pushes it around — would roughly double to
+            // ~91.5pt, and the vertical insets would climb well past 100pt. The upper bounds
+            // below sit strictly between the measured single-margin values and that
+            // doubled/stacked estimate, so a future regression that starts stacking the two
+            // margins fails this test rather than passing it by coincidence.
+            assertThat(page1[0]).as("page 1 left inset (pt)").isBetween(20f, 80f);
+            assertThat(page1[1]).as("page 1 top inset (pt)").isBetween(20f, 95f);
+            assertThat(page2[0]).as("page 2 left inset (pt)").isBetween(20f, 80f);
+            assertThat(page2[1]).as("page 2 top inset (pt)").isBetween(20f, 95f);
         }
     }
 

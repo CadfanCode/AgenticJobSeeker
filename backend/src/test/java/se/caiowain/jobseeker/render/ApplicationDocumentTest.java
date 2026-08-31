@@ -2,6 +2,7 @@ package se.caiowain.jobseeker.render;
 
 import org.junit.jupiter.api.Test;
 import se.caiowain.jobseeker.domain.JobPosting;
+import se.caiowain.jobseeker.profile.domain.CvEducation;
 import se.caiowain.jobseeker.profile.domain.CvExperience;
 import se.caiowain.jobseeker.profile.domain.CvExperienceBullet;
 import se.caiowain.jobseeker.profile.domain.CvProfile;
@@ -124,6 +125,33 @@ class ApplicationDocumentTest {
 
         assertThat(cv.experiences()).hasSize(1);
         assertThat(cv.experiences().getFirst().bullets()).containsExactly("A", "B");
+    }
+
+    @Test
+    void aProfilesEducationReachesTheRenderedHtml() {
+        // CvProfile maintains education, an earlier slice extracts it, and the profile page
+        // shows it — but ApplicationDocument.cv() used to read only experiences and skills,
+        // so the CV an employer received had no Education section at all.
+        CvProfile profile = profileWithBullets("Built REST APIs in Java");
+        CvEducation education = new CvEducation();
+        education.setInstitution("KTH Royal Institute of Technology");
+        education.setDegree("MSc Computer Science");
+        education.setFieldOfStudy("Distributed Systems");
+        education.setStartDate("2016");
+        education.setEndDate("2020");
+        education.setOrdinal(0);
+        profile.addEducation(education);
+        TailoredApplication application = applicationCiting();
+
+        CvContent cv = document.cv(application, profile);
+
+        assertThat(cv.education()).hasSize(1);
+        assertThat(cv.education().getFirst().institution())
+                .isEqualTo("KTH Royal Institute of Technology");
+
+        String html = new DocumentHtmlBuilder().cvHtml(cv);
+        assertThat(html).contains("KTH Royal Institute of Technology")
+                .contains("MSc Computer Science");
     }
 
     @Test
