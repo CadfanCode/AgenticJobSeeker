@@ -4,6 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import se.caiowain.jobseeker.archive.ApplicationNotDraftException;
+import se.caiowain.jobseeker.render.RendererUnavailableException;
 import se.caiowain.jobseeker.tailor.ApplicationAlreadyApprovedException;
 import se.caiowain.jobseeker.profile.ProfileNotReadyException;
 import se.caiowain.jobseeker.select.SelectionRejectedException;
@@ -38,6 +40,16 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(ApplicationAlreadyApprovedException.class)
     ProblemDetail alreadyApproved(ApplicationAlreadyApprovedException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+    }
+
+    @ExceptionHandler(RendererUnavailableException.class)
+    ProblemDetail rendererUnavailable(RendererUnavailableException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, e.getMessage());
+    }
+
+    @ExceptionHandler(ApplicationNotDraftException.class)
+    ProblemDetail notDraft(ApplicationNotDraftException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
     }
 }
