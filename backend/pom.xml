@@ -126,6 +126,11 @@
 			<artifactId>pdfbox</artifactId>
 			<version>3.0.8</version>
 		</dependency>
+		<dependency>
+			<groupId>com.microsoft.playwright</groupId>
+			<artifactId>playwright</artifactId>
+			<version>1.62.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -133,6 +138,22 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<!--
+				Declared (not bound to a lifecycle phase) so PdfRenderer's 503 message — the
+				offline browser-install instruction, "./mvnw exec:java ..." — actually resolves.
+				Without an explicit declaration here, "exec:java" is a bare plugin prefix that
+				Maven resolves by querying repository metadata, which needs network; a machine
+				with no browser installed is exactly the machine this is least likely to have.
+				Declaring the plugin (even with no <executions>) makes Maven download and pin
+				it once, during an ordinary networked build, so the prefix resolves from the
+				reactor POM afterwards with no network involved. Version pinned per project
+				convention (see the Playwright dependency above) rather than left floating.
+			-->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.6.3</version>
 			</plugin>
 		</plugins>
 	</build>

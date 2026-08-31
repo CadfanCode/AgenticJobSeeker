@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { fetchJob } from '../api/client'
 import { fetchApplicationForJob, tailorJob } from '../api/applicationClient'
+import { fetchDeepFit, scoreJob } from '../api/fitClient'
 import type { Application } from '../applicationTypes'
 import { SourceBadge } from '../components/SourceBadge'
+import type { DeepFit } from '../fitTypes'
 import type { JobDetail as Job } from '../types'
 
 export function JobDetail() {
@@ -15,6 +17,10 @@ export function JobDetail() {
   const [application, setApplication] = useState<Application | null>(null)
   const [tailoring, setTailoring] = useState(false)
   const [tailorError, setTailorError] = useState<string | null>(null)
+
+  const [fit, setFit] = useState<DeepFit | null>(null)
+  const [scoring, setScoring] = useState(false)
+  const [fitError, setFitError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -30,6 +36,24 @@ export function JobDetail() {
     if (!id) return
     fetchApplicationForJob(Number(id)).then(setApplication).catch(() => setApplication(null))
   }, [id])
+
+  useEffect(() => {
+    if (!id) return
+    fetchDeepFit(Number(id)).then(setFit).catch(() => setFit(null))
+  }, [id])
+
+  const runScore = async () => {
+    if (!id) return
+    setScoring(true)
+    setFitError(null)
+    try {
+      setFit(await scoreJob(Number(id)))
+    } catch (e) {
+      setFitError((e as Error).message)
+    } finally {
+      setScoring(false)
+    }
+  }
 
   const runTailor = async () => {
     if (!id) return
@@ -109,6 +133,52 @@ export function JobDetail() {
           <p className="mt-2 rounded-md bg-red-50 p-3 text-sm text-red-700">{tailorError}</p>
         )}
       </div>
+
+      <section className="mt-8">
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          Requirement coverage
+        </h2>
+
+        {fit && (
+          <>
+            <p className="text-sm text-slate-800">
+              Your own bullets answer <strong>{fit.coveragePercent}%</strong> of the{' '}
+              {fit.requirementCount} requirement{fit.requirementCount === 1 ? '' : 's'} this ad
+              states.
+            </p>
+            {fit.gaps.length > 0 && (
+              <div className="mt-3">
+                <p className="text-sm text-slate-600">Nothing in your CV answers these:</p>
+                <ul className="mt-2 space-y-1">
+                  {fit.gaps.map((gap) => (
+                    <li
+                      key={gap}
+                      className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                    >
+                      {gap}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-slate-500">
+                  Quoted from the ad. This gap is the honest distance between you and the job.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        <button
+          onClick={runScore}
+          disabled={scoring}
+          className={`rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50 ${fit ? 'mt-3' : ''}`}
+        >
+          {scoring ? 'Reading the ad… (1–2 min)' : fit ? 'Score again' : 'Score this job'}
+        </button>
+
+        {fitError && (
+          <p className="mt-2 rounded-md bg-red-50 p-3 text-sm text-red-700">{fitError}</p>
+        )}
+      </section>
 
       <section className="mt-8">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">

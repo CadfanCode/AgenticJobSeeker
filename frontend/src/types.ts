@@ -1,6 +1,9 @@
+import type { GateVerdict, TriageState } from './fitTypes'
+
 export type SourceId = 'JOBTECH' | 'TEAMTAILOR' | 'VARBI'
 
-export interface JobSummary {
+/** Fields both `GET /api/jobs` and `GET /api/jobs/{id}` return. */
+export interface JobBase {
   id: number
   title: string
   employerName: string | null
@@ -11,6 +14,20 @@ export interface JobSummary {
   lastSeenAt: string | null
 }
 
+/**
+ * The list endpoint's shape. The fit fields are nullable because a posting ingested since
+ * the last prescreen has no fit row yet and must still be listed.
+ */
+export interface JobSummary extends JobBase {
+  matchedSkillCount: number | null
+  matchedSkills: string | null
+  languageGate: GateVerdict | null
+  languageNote: string | null
+  locationGate: GateVerdict | null
+  deadlinePassed: boolean | null
+  triage: TriageState | null
+}
+
 export interface JobSource {
   source: SourceId
   sourceAdId: string
@@ -18,7 +35,8 @@ export interface JobSource {
   fetchedAt: string
 }
 
-export interface JobDetail extends JobSummary {
+/** The detail endpoint's shape. It never returns the fit fields — see `JobSummary`. */
+export interface JobDetail extends JobBase {
   employerOrgNumber: string | null
   description: string | null
   language: string | null
@@ -62,6 +80,9 @@ export interface JobFilters {
   municipality?: string
   vendor?: string
   source?: string
+  sort?: string
+  triage?: string
+  includeGateFailures?: boolean
   page?: number
   size?: number
 }

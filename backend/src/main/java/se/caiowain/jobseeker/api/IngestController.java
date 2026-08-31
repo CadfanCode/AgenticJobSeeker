@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import se.caiowain.jobseeker.api.dto.IngestRunDto;
 import se.caiowain.jobseeker.api.dto.PageDto;
 import se.caiowain.jobseeker.domain.IngestRun;
+import se.caiowain.jobseeker.fit.PrescreenService;
 import se.caiowain.jobseeker.ingest.IngestOrchestrator;
 import se.caiowain.jobseeker.repo.IngestRunRepository;
 
@@ -16,15 +17,21 @@ public class IngestController {
 
     private final IngestOrchestrator orchestrator;
     private final IngestRunRepository runs;
+    private final PrescreenService prescreen;
 
-    public IngestController(IngestOrchestrator orchestrator, IngestRunRepository runs) {
+    public IngestController(IngestOrchestrator orchestrator, IngestRunRepository runs,
+                            PrescreenService prescreen) {
         this.orchestrator = orchestrator;
         this.runs = runs;
+        this.prescreen = prescreen;
     }
 
     @PostMapping("/run")
     public List<IngestRunDto> run() {
-        return orchestrator.runAll().stream().map(IngestController::toDto).toList();
+        List<IngestRunDto> results =
+                orchestrator.runAll().stream().map(IngestController::toDto).toList();
+        prescreen.runQuietly();
+        return results;
     }
 
     @GetMapping("/runs")

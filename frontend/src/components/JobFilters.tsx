@@ -34,6 +34,31 @@ export function JobFilters({ value, onChange }: Props) {
         <option value="TEAMTAILOR">Teamtailor</option>
         <option value="VARBI">Varbi</option>
       </select>
+      <select
+        value={value.sort ?? ''}
+        onChange={(e) => set({ sort: e.target.value })}
+        className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+      >
+        <option value="">Newest first</option>
+        <option value="skills">Most skills matched</option>
+      </select>
+      <select
+        value={value.triage ?? ''}
+        onChange={(e) => set({ triage: e.target.value })}
+        className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+      >
+        <option value="">Undecided and shortlisted</option>
+        <option value="SHORTLISTED">Shortlisted only</option>
+        <option value="DISMISSED">Dismissed only</option>
+      </select>
+      <label className="flex items-center gap-2 text-sm text-slate-600">
+        <input
+          type="checkbox"
+          checked={value.includeGateFailures ?? false}
+          onChange={(e) => set({ includeGateFailures: e.target.checked })}
+        />
+        Show vetoed
+      </label>
     </div>
   )
 }

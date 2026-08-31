@@ -1,18 +1,24 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   approveApplication, discardApplication, fetchApplication, saveLetter,
 } from '../api/applicationClient'
 import type { Application } from '../applicationTypes'
 import { CoverageBar } from '../components/CoverageBar'
+import { DocumentPreview } from '../components/DocumentPreview'
 
 export function ApplicationReview() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [app, setApp] = useState<Application | null>(null)
   const [prose, setProse] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Bumped on every successful save and passed to DocumentPreview, which folds it into the
+  // iframe's key and URL. Without it the preview's src never changes when only the letter's
+  // text changes, so the browser keeps showing the document from before the edit.
+  const [revision, setRevision] = useState(0)
 
   useEffect(() => {
     if (!id) return
@@ -26,6 +32,38 @@ export function ApplicationReview() {
     try { setApp(await action()); setMessage(note) }
     catch (e) { setError((e as Error).message) }
     finally { setBusy(false) }
+  }
+
+  const save = async () => {
+    if (!app) return
+    setBusy(true); setError(null); setMessage(null)
+    try {
+      setApp(await saveLetter(app.id, prose))
+      setRevision((r) => r + 1)
+      setMessage('Saved.')
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const approve = async () => {
+    if (!app) return
+    setBusy(true); setError(null); setMessage(null)
+    try {
+      // Approve always saves first: the archived PDF must match the textarea the candidate
+      // is looking at, not whatever was last saved. A disabled button with an "unsaved
+      // changes" note would only describe the problem; saving is the obvious right thing.
+      await saveLetter(app.id, prose)
+      setRevision((r) => r + 1)
+      const archived = await approveApplication(app.id)
+      navigate(`/archive/${archived.id}`)
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
   }
 
   if (error && !app) {
@@ -55,7 +93,7 @@ export function ApplicationReview() {
           <div className="mt-3"><CoverageBar percent={app.coveragePercent} /></div>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => run(() => saveLetter(app.id, prose), 'Saved.')} disabled={busy}
+          <button onClick={save} disabled={busy}
                   className="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50">
             Save
           </button>
@@ -63,9 +101,9 @@ export function ApplicationReview() {
                   className="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50">
             Discard
           </button>
-          <button onClick={() => run(() => approveApplication(app.id), 'Approved.')} disabled={busy}
+          <button onClick={approve} disabled={busy}
                   className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50">
-            Approve
+            {busy ? 'Rendering…' : 'Approve'}
           </button>
         </div>
       </header>
@@ -109,6 +147,8 @@ export function ApplicationReview() {
           ))}
         </ul>
       </section>
+
+      <DocumentPreview applicationId={app.id} revision={revision} />
 
       <section>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
