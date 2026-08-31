@@ -1,3 +1,4 @@
+import type { ArchiveDetail } from '../archiveTypes'
 import type { Application, ApplicationSummary } from '../applicationTypes'
 import type { Page } from '../types'
 
@@ -46,8 +47,12 @@ export function saveLetter(id: number, prose: string): Promise<Application> {
   })
 }
 
-export function approveApplication(id: number): Promise<Application> {
-  return json<Application>(`/api/applications/${id}/approve`, { method: 'POST' })
+/**
+ * Approval renders both documents and freezes them, so it takes seconds and returns the
+ * archived record rather than the application.
+ */
+export function approveApplication(id: number): Promise<ArchiveDetail> {
+  return json<ArchiveDetail>(`/api/applications/${id}/approve`, { method: 'POST' })
 }
 
 export function discardApplication(id: number): Promise<Application> {

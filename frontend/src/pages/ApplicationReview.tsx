@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   approveApplication, discardApplication, fetchApplication, saveLetter,
 } from '../api/applicationClient'
 import type { Application } from '../applicationTypes'
 import { CoverageBar } from '../components/CoverageBar'
+import { DocumentPreview } from '../components/DocumentPreview'
 
 export function ApplicationReview() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [app, setApp] = useState<Application | null>(null)
   const [prose, setProse] = useState('')
   const [busy, setBusy] = useState(false)
@@ -26,6 +28,19 @@ export function ApplicationReview() {
     try { setApp(await action()); setMessage(note) }
     catch (e) { setError((e as Error).message) }
     finally { setBusy(false) }
+  }
+
+  const approve = async () => {
+    if (!app) return
+    setBusy(true); setError(null); setMessage(null)
+    try {
+      const archived = await approveApplication(app.id)
+      navigate(`/archive/${archived.id}`)
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
   }
 
   if (error && !app) {
@@ -63,9 +78,9 @@ export function ApplicationReview() {
                   className="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50">
             Discard
           </button>
-          <button onClick={() => run(() => approveApplication(app.id), 'Approved.')} disabled={busy}
+          <button onClick={approve} disabled={busy}
                   className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50">
-            Approve
+            {busy ? 'Rendering…' : 'Approve'}
           </button>
         </div>
       </header>
@@ -109,6 +124,8 @@ export function ApplicationReview() {
           ))}
         </ul>
       </section>
+
+      <DocumentPreview applicationId={app.id} />
 
       <section>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
