@@ -53,11 +53,6 @@ public class TailoringController {
         return toDto(service.saveLetter(id, request.prose()));
     }
 
-    @PostMapping("/api/applications/{id}/approve")
-    public ApplicationDto approve(@PathVariable Long id) {
-        return toDto(service.approve(id));
-    }
-
     @DeleteMapping("/api/applications/{id}")
     public ApplicationDto discard(@PathVariable Long id) {
         return toDto(service.discard(id));

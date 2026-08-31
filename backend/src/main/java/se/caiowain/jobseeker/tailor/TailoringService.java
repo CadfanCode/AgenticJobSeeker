@@ -125,14 +125,6 @@ public class TailoringService {
     }
 
     @Transactional
-    public TailoredApplication approve(Long id) {
-        TailoredApplication app = require(id);
-        app.setStatus(ApplicationStatus.APPROVED);
-        app.setReviewedAt(Instant.now());
-        return applications.save(app);
-    }
-
-    @Transactional
     public TailoredApplication discard(Long id) {
         TailoredApplication app = require(id);
         app.setStatus(ApplicationStatus.DISCARDED);

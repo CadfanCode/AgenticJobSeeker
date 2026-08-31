@@ -164,8 +164,12 @@ class TailoringServiceTest extends AbstractIntegrationTest {
 
     @Test
     void reTailoringRefusesToOverwriteAnApprovedApplication() {
+        // Approval itself (render, hash, freeze) now belongs to ArchiveService (Task 6) and
+        // is covered by ArchiveServiceTest; TailoringService.approve no longer exists. Only
+        // the resulting APPROVED status matters to this guard, so it is set directly.
         TailoredApplication app = service.tailor(jobId);
-        service.approve(app.getId());
+        app.setStatus(ApplicationStatus.APPROVED);
+        applications.saveAndFlush(app);
 
         assertThatThrownBy(() -> service.tailor(jobId))
                 .isInstanceOf(ApplicationAlreadyApprovedException.class)
@@ -173,12 +177,13 @@ class TailoringServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void approveFreezesAndDiscardReleases() {
+    void discardReleasesAnApprovedApplicationForRetailoring() {
+        // "Approve sets status to APPROVED" is now ArchiveServiceTest's
+        // approvingFlipsTheApplicationToApproved; here we only need an APPROVED application
+        // to exercise discard()'s release of the re-tailoring guard above.
         TailoredApplication app = service.tailor(jobId);
-
-        service.approve(app.getId());
-        assertThat(applications.findById(app.getId()).orElseThrow().getStatus())
-                .isEqualTo(ApplicationStatus.APPROVED);
+        app.setStatus(ApplicationStatus.APPROVED);
+        applications.saveAndFlush(app);
 
         service.discard(app.getId());
         assertThat(applications.findById(app.getId()).orElseThrow().getStatus())

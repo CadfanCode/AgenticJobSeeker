@@ -15,6 +15,8 @@ import se.caiowain.jobseeker.domain.JobStatus;
 import se.caiowain.jobseeker.profile.domain.*;
 import se.caiowain.jobseeker.profile.repo.CvDocumentRepository;
 import se.caiowain.jobseeker.profile.repo.CvProfileRepository;
+import se.caiowain.jobseeker.archive.ArchiveService;
+import se.caiowain.jobseeker.render.PdfRenderer;
 import se.caiowain.jobseeker.repo.JobPostingRepository;
 import se.caiowain.jobseeker.tailor.repo.TailoredApplicationRepository;
 import se.caiowain.jobseeker.select.OllamaSelectionClient;
@@ -41,8 +43,13 @@ class TailoringControllerTest extends AbstractIntegrationTest {
     @Autowired JobPostingRepository jobs;
     @Autowired CvProfileRepository profiles;
     @Autowired CvDocumentRepository documents;
+    @Autowired ArchiveService archiveService;
 
     @MockitoBean OllamaSelectionClient selectionClient;
+    // Approval now belongs to ArchiveService (Task 6); TailoringController no longer exposes
+    // /approve. The renderer is mocked here purely to drive an application to APPROVED
+    // status for the tests below — no test may launch a browser.
+    @MockitoBean PdfRenderer renderer;
 
     private static final String DESCRIPTION =
             "Vi soker en utvecklare. Har erfarenhet av webbutveckling.";
@@ -162,16 +169,22 @@ class TailoringControllerTest extends AbstractIntegrationTest {
         // 404, so a generic exception here resolved to the wrong status at runtime.
         mvc.perform(post("/api/jobs/" + jobId + "/tailor")).andExpect(status().isCreated());
         Long id = applications.findFirstByJobPostingIdOrderByIdDesc(jobId).orElseThrow().getId();
-        mvc.perform(post("/api/applications/" + id + "/approve")).andExpect(status().isOk());
+
+        doReturn(new PdfRenderer.RenderedDocuments(
+                List.of("cv".getBytes(), "letter".getBytes()), "chromium/mocked"))
+                .when(renderer).renderAll(any());
+        archiveService.approve(id);
 
         mvc.perform(post("/api/jobs/" + jobId + "/tailor"))
                 .andExpect(status().isConflict());
     }
 
     @Test
-    void savesProseApprovesAndDiscards() throws Exception {
-        String body = mvc.perform(post("/api/jobs/" + jobId + "/tailor"))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+    void savesProseAndDiscards() throws Exception {
+        // Approval is exercised at the HTTP level by ArchiveControllerTest (Task 7); this
+        // test now only covers the letter and discard endpoints that remain on
+        // TailoringController.
+        mvc.perform(post("/api/jobs/" + jobId + "/tailor")).andExpect(status().isCreated());
         Long id = applications.findFirstByJobPostingIdOrderByIdDesc(jobId).orElseThrow().getId();
 
         mvc.perform(put("/api/applications/" + id + "/letter")
@@ -179,10 +192,6 @@ class TailoringControllerTest extends AbstractIntegrationTest {
                         .content("{\"prose\":\"Hej! Jag soker tjansten.\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.letterProse").value("Hej! Jag soker tjansten."));
-
-        mvc.perform(post("/api/applications/" + id + "/approve"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("APPROVED"));
 
         mvc.perform(delete("/api/applications/" + id))
                 .andExpect(status().isOk())
